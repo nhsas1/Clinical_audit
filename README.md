@@ -21,6 +21,8 @@ The development server listens on port 3000. `pnpm check` runs TypeScript checki
 
 The managed project has server capability enabled, so the publish contract uses the committed `Dockerfile` rather than a static-only upload. The container builds the locked Vite bundle with pnpm, serves `dist/` through Nginx, falls back to `index.html` for React Router routes and exposes an unauthenticated `/health` endpoint for readiness checks. The Webdev deploy declaration points to `Dockerfile` and `/health`.
 
+The final image copies `/app/dist` from the Docker build stage; it does not expect a prebuilt `dist/` directory in the publish context. Container build caching is disabled in the Webdev project configuration while the cache manifest is re-established.
+
 The managed project supplies `SUPABASE_URL` and `SUPABASE_ANON_KEY` as protected environment values. Vite maps these into browser-safe `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` at build time. The anon key is intentionally public; row-level security remains the protection boundary.
 
 ## Supabase setup

@@ -33,7 +33,8 @@ create or replace view public.report_register as
 select r.id, r.serial, r.title, r.ward_id, r.audit_ref,
        coalesce(h.reached_on::date, r.report_date) as report_date,
        case h.stage when 'Drafted' then 'Draft' when 'Peer reviewed' then 'Under review'
-                    when 'Approved' then 'Approved' else coalesce(h.stage, r.status) end as status,
+                    when 'Approved' then 'Approved' when 'Published' then 'Published'
+                    when 'Action plan agreed' then 'Published' else r.status end as status,
        coalesce(pa.score, ua.score) as score
 from public.reports r
 left join lateral (select stage, reached_on from public.report_status_history x where x.report_id = r.id order by reached_on desc limit 1) h on true

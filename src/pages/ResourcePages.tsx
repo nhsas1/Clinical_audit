@@ -10,6 +10,7 @@ import { fmtDate, plural, showToast } from '../lib/utils';
 import { Drawer, Empty, Modal, PageIntro, Score, Section, Status, Table } from '../components/ui';
 import { useScoped } from './AuditPages';
 import { WardCell } from '../components/hierarchy';
+import { Can } from '../components/account';
 
 const tools = [['Hand Hygiene Observation', 'v3.1', 12, '2026-02-14'], ['Medication Administration', 'v2.4', 18, '2026-01-22'], ['Patient Identification', 'v2.2', 10, '2026-03-03'], ['Pressure Injury Prevention Bundle', 'v4.0', 15, '2026-02-28'], ['Falls Risk and Prevention', 'v3.0', 14, '2026-01-30'], ['Peripheral IV Cannula Care', 'v2.1', 11, '2026-02-18'], ['Nursing Documentation', 'v3.2', 20, '2026-03-09'], ['Nursing Handover SBAR', 'v1.8', 9, '2026-02-05']] as const;
 const learning = [['Five moments refresher', 'Video', 'Hand hygiene', 'Foundation', 12], ['Safe administration checks', 'Slides', 'Medication safety', 'Foundation', 18], ['Patient ID at the bedside', 'PDF guide', 'Patient safety', 'Foundation', 10], ['Pressure injury bundle walk-through', 'Video', 'Pressure injury', 'Intermediate', 22], ['Falls prevention essentials', 'Slides', 'Falls', 'Foundation', 20], ['Peripheral IV review', 'PDF guide', 'Vascular access', 'Intermediate', 15], ['Writing a useful nursing note', 'Video', 'Documentation', 'Foundation', 16], ['SBAR handover practice', 'Slides', 'Communication', 'Foundation', 25]] as const;
@@ -31,7 +32,7 @@ export function Reports() {
   const rows = reports.filter(r => (status === 'All' || reportStatus(r) === status) && `${r.serial} ${r.title}`.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => b.serial.localeCompare(a.serial));
   const d = drawer?.report;
-  return <><PageIntro title="Reports" subtitle="Serialised audit reports with reference trails and lifecycle history." action={<button className="btn primary" onClick={simulated}><Upload size={15} aria-hidden="true" /> Upload report</button>} />
+  return <><PageIntro title="Reports" subtitle="Serialised audit reports with reference trails and lifecycle history." action={<Can perm="report.write"><button className="btn primary" onClick={simulated}><Upload size={15} aria-hidden="true" /> Upload report</button></Can>} />
     <Section title="Report register" meta={plural(rows.length, 'report') + ' in view'}>
       <div className="toolbar"><label className="search"><Search size={15} aria-hidden="true" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search serial or title" aria-label="Search serial or title" /></label><div className="filters" role="group" aria-label="Filter by status">{['All', 'Draft', 'Under review', 'Approved', 'Published'].map(x => <button className={status === x ? 'chip active' : 'chip'} aria-pressed={status === x} onClick={() => setStatus(x)} key={x}>{x}</button>)}</div></div>
       <Table loading={hub.loading} empty={!rows.length} className="sticky-first reports-table"><thead><tr><th>Serial no.</th><th>Report</th><th>Audit</th><th>Ward</th><th>Date</th><th>Score</th><th>Status</th><th>References</th><th>Track</th></tr></thead>
@@ -60,7 +61,7 @@ export function Standards() {
   const [filter, setFilter] = useState('All');
   const [show, setShow] = useState(false);
   const rows = hub.references.filter(x => filter === 'All' || x.kind === filter);
-  return <><PageIntro title="Standards and policies" subtitle="The reference library behind audit methods, reports and improvement work." action={<button className="btn primary" onClick={() => setShow(true)}><Link2 size={15} aria-hidden="true" /> Add link</button>} />
+  return <><PageIntro title="Standards and policies" subtitle="The reference library behind audit methods, reports and improvement work." action={<Can perm="reference.write"><button className="btn primary" onClick={() => setShow(true)}><Link2 size={15} aria-hidden="true" /> Add link</button></Can>} />
     <Section title="Reference library" meta={plural(rows.length, 'reference')} action={<div className="filters" role="group" aria-label="Filter by type">{['All', 'External standard', 'Internal policy', 'Audit method'].map(x => <button className={filter === x ? 'chip active' : 'chip'} aria-pressed={filter === x} onClick={() => setFilter(x)} key={x}>{x}</button>)}</div>}>
       <Table loading={hub.loading} empty={!rows.length}><thead><tr><th>Code</th><th>Title</th><th>Type</th><th>Link</th></tr></thead><tbody>{rows.map(x => <tr key={x.code}><td><strong>{x.code}</strong></td><td>{x.title}</td><td><Status value={x.kind} /></td><td>{x.url ? <a className="text-link" href={x.url} target="_blank" rel="noreferrer">Open source <ExternalLink size={12} aria-hidden="true" /></a> : <span className="muted">No external link</span>}</td></tr>)}</tbody></Table>
     </Section>
@@ -71,7 +72,7 @@ export function Standards() {
 export function Initiatives() {
   const hub = useHub();
   const rows = hub.initiatives.filter(x => hub.inScope(x.ward_id));
-  return <><PageIntro title="Quality initiatives" subtitle="PDSA workstreams turning audit findings into measurable improvement." action={<button className="btn primary" onClick={() => showToast('Adding initiatives is not enabled in this simulation yet.')}><Sparkles size={15} aria-hidden="true" /> Add initiative</button>} />
+  return <><PageIntro title="Quality initiatives" subtitle="PDSA workstreams turning audit findings into measurable improvement." action={<Can perm="audit.write"><button className="btn primary" onClick={() => showToast('Adding initiatives is not enabled in this simulation yet.')}><Sparkles size={15} aria-hidden="true" /> Add initiative</button></Can>} />
     {!rows.length ? <section className="panel"><Empty title="No initiatives for this ward" hint="Choose another ward or All wards in the filter at the top." /></section> :
       <div className="initiative-grid">{rows.map(x => <div className="initiative-card" key={x.ref}><div className="initiative-top"><strong>{x.ref}</strong><Status value={x.stage} /></div><h2>{x.title}</h2><div className="muted">{hub.wardName(x.ward_id)} ({hub.wardContext(x.ward_id)}) · {x.category} · {x.lead}</div><div className="pdsa" aria-label={`PDSA stage: ${x.stage}`}>{['Plan', 'Do', 'Study', 'Act'].map(s => <span className={s === x.stage ? 'current' : ''} key={s}>{s}</span>)}</div><div className="initiative-progress" role="img" aria-label={`${x.progress}% complete`}><i style={{ width: `${x.progress}%` }} /></div><div className="initiative-foot"><span>{x.progress}% complete</span><strong>{x.measure}</strong></div></div>)}</div>}
   </>;
@@ -151,16 +152,21 @@ export function Liaisons() {
   const trained = scoped.filter(x => x.training_status === 'Trained').length;
   const pct = (n: number, d: number) => (d ? Math.round(n / d * 100) : 0);
   const update = (ward_id: string, patch: Partial<Liaison>) => setDraft(d => (d ?? hub.liaisons).map(x => x.ward_id === ward_id ? { ...x, ...patch } : x));
-  function save() {
+  const [saving, setSaving] = useState(false);
+  async function save() {
     if (!draft) return;
     const bad = draft.find(x => !x.name.trim() || !/^\d{4}$/.test(x.ext));
     if (bad) { showToast(`Check ${hub.wardName(bad.ward_id)} (${hub.wardContext(bad.ward_id)}): a name and a 4-digit extension are required.`); return; }
-    hub.setLiaisons(draft); setDraft(null);
-    showToast('Directory updated for this session. Saving to the database needs a signed-in admin.');
+    setSaving(true);
+    const err = await hub.saveLiaisons(draft);
+    setSaving(false);
+    if (err) { showToast(err); return; }
+    setDraft(null);
+    showToast(hub.source === 'supabase' ? 'Directory saved.' : 'Directory updated (sample mode, not saved).');
   }
   return <><PageIntro title="Quality liaisons" subtitle="A ward-by-ward view of the nursing quality liaison network." action={editing
-    ? <div className="btn-row"><button className="btn" onClick={() => setDraft(null)}>Cancel</button><button className="btn primary" onClick={save}><Save size={15} aria-hidden="true" /> Save directory</button></div>
-    : <button className="btn primary" onClick={() => setDraft(hub.liaisons)}><Pencil size={15} aria-hidden="true" /> Edit directory</button>} />
+    ? <div className="btn-row"><button className="btn" onClick={() => setDraft(null)}>Cancel</button><button className="btn primary" onClick={save} disabled={saving}><Save size={15} aria-hidden="true" /> {saving ? 'Saving…' : 'Save directory'}</button></div>
+    : <Can perm="liaison.write"><button className="btn primary" onClick={() => setDraft(hub.liaisons)}><Pencil size={15} aria-hidden="true" /> Edit directory</button></Can>} />
     <div className="notice sample-note"><LockKeyhole size={15} aria-hidden="true" /> <strong>Sample data.</strong> Names and extensions are fictional. Use the Hospital and Department filters at the top to narrow the directory.</div>
     {editing && <div className="notice" role="status"><Pencil size={15} aria-hidden="true" /> Editing the directory. Unsaved changes are kept until you save or cancel.</div>}
     <div className="kpi-grid kpi-grid-3">

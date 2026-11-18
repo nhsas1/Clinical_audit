@@ -60,3 +60,30 @@ ol.timeline{list-style:none;padding:0}
 .sample-note strong{font-weight:700}
 @media(max-width:760px){.filter-bar{padding:8px 16px}.scope-filter{gap:6px}.scope-filter label{flex:1 1 100%}.scope-filter select{min-width:0;max-width:none;width:100%}.kpi-grid-3{grid-template-columns:1fr 1fr}.crumb-hospital{display:none}}
 @media(max-width:760px){.scope-filter label{flex:1 1 calc(50% - 6px)}.scope-filter label:nth-of-type(3){flex-basis:100%}.scope-filter label span{font-size:9px}.scope-filter select{padding:6px 8px}}
+
+/* Account */
+.user-menu{position:relative}
+.avatar-btn{display:flex;align-items:center;gap:7px;border:1px solid transparent;background:transparent;border-radius:18px;padding:2px 8px 2px 2px}
+.avatar-btn:hover{border-color:var(--border);background:var(--soft)}
+.role-badge{font-size:10px;font-weight:700;border-radius:3px;padding:3px 6px;background:var(--neutral);color:var(--muted);white-space:nowrap}
+.role-badge.admin{background:var(--navy);color:#fff}
+.role-badge.auditor{background:color-mix(in srgb,var(--teal) 16%,var(--surface));color:var(--teal)}
+.role-badge.viewer{background:var(--soft);color:var(--navy)}
+.menu{position:absolute;right:0;top:calc(100% + 6px);min-width:230px;background:var(--surface);border:1px solid var(--border);border-radius:5px;box-shadow:0 10px 30px rgba(0,0,0,.12);z-index:30;padding:6px}
+.menu-head{padding:8px 10px 10px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.menu-head strong,.menu-head span{display:block;font-size:12px;overflow-wrap:anywhere}
+.menu-head span{color:var(--muted);font-size:11px;margin-top:3px}
+.menu-item{display:flex;align-items:center;gap:8px;width:100%;border:0;background:transparent;color:var(--text);padding:8px 10px;border-radius:4px;font-size:12px;text-align:left}
+.menu-item:hover{background:var(--soft);color:var(--navy)}
+.nav-lock{margin-left:auto;color:var(--muted)}
+.user-chip>svg{color:var(--teal);flex-shrink:0}
+.user-chip strong{overflow-wrap:anywhere}
+.signin-card{max-width:440px;background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:22px}
+.signin-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.signin-note{display:flex;gap:6px;align-items:flex-start;margin:18px 0 0;line-height:1.5}
+.form-msg{font-size:12px;padding:8px 10px;border-radius:4px;margin:4px 0 10px}
+.form-msg.error{background:var(--critical-bg);color:var(--critical)}
+.form-msg.ok{background:var(--good-bg);color:var(--good)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn[aria-disabled=true]{opacity:.55}
+@media(max-width:760px){.avatar-btn .role-badge{display:none}.top-actions .role-badge.sample{font-size:9px}}

@@ -8,6 +8,7 @@ import {
 } from '../lib/derive';
 import { band, bandLabel, fmtDate, plural, showToast } from '../lib/utils';
 import { GroupedHeatmap, WardCell, WardOptions } from '../components/hierarchy';
+import { Can } from '../components/account';
 import { Empty, Kpi, Loading, Modal, PageIntro, Score, Section, Status, Table } from '../components/ui';
 import type { UnplannedAudit } from '../lib/data';
 
@@ -100,7 +101,7 @@ export function Planned() {
   const [status, setStatus] = useState('All');
   const rows = planned.filter(x => status === 'All' || plannedStatus(x) === status);
   return <>
-    <PageIntro title="Planned audits" subtitle="Track the annual audit programme from schedule to completed score." action={<button className="btn primary" onClick={() => showToast('Adding planned audits is not enabled in this simulation yet.')}><CalendarDays size={16} aria-hidden="true" /> Add planned audit</button>} />
+    <PageIntro title="Planned audits" subtitle="Track the annual audit programme from schedule to completed score." action={<Can perm="audit.write"><button className="btn primary" onClick={() => showToast('Adding planned audits is not enabled in this simulation yet.')}><CalendarDays size={16} aria-hidden="true" /> Add planned audit</button></Can>} />
     <div className="quarter-grid">{['Q1', 'Q2', 'Q3', 'Q4'].map(q => {
       const all = planned.filter(x => x.quarter === q), done = all.filter(x => plannedStatus(x) === 'Completed').length;
       const pct = all.length ? Math.round(done / all.length * 100) : 0;
@@ -130,7 +131,7 @@ export function Unplanned() {
     showToast(`${next.ref} added for this session (simulation, not saved).`);
   }
   return <>
-    <PageIntro title="Unplanned audits" subtitle="Respond to emerging risk, incidents and requests with a visible audit trail." action={<button className="btn primary" onClick={() => setOpen(true)}><AlertTriangle size={16} aria-hidden="true" /> Request an audit</button>} />
+    <PageIntro title="Unplanned audits" subtitle="Respond to emerging risk, incidents and requests with a visible audit trail." action={<Can perm="audit.write"><button className="btn primary" onClick={() => setOpen(true)}><AlertTriangle size={16} aria-hidden="true" /> Request an audit</button></Can>} />
     <div className="grid-2">
       <Section title="Trigger breakdown" meta="Unplanned audit requests in scope">
         {hub.loading ? <Loading /> : <div className="chart-wrap" role="img" aria-label={counts.map(c => `${c.name}: ${c.count}`).join(', ')}><ResponsiveContainer width="100%" height={230}><BarChart data={counts} layout="vertical" margin={{ left: 8, right: 20 }}><CartesianGrid strokeDasharray="3 3" horizontal={false} /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} /><YAxis dataKey="name" type="category" width={140} tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="count" name="Requests" fill="var(--teal)" radius={[0, 3, 3, 0]} /></BarChart></ResponsiveContainer></div>}
@@ -164,7 +165,7 @@ export function Pending() {
     </div>
     <Section title="Queue by waiting time" meta={plural(queue.length, 'pending audit')}>
       <Table loading={hub.loading} empty={!queue.length} emptyTitle="Nothing waiting" emptyHint="No pending audits in this scope."><thead><tr><th>Audit ref</th><th>Ward</th><th>Waiting for</th><th>Since</th><th>Days waiting</th><th>Owner</th><th><span className="sr-only">Actions</span></th></tr></thead>
-        <tbody>{queue.map(x => <tr key={x.id}><td><strong>{x.audit_ref}</strong></td><td><WardCell id={x.ward_id} /></td><td>{x.waiting_for}</td><td className="nowrap">{fmtDate(x.since_date)}</td><td><strong className={x.days > 30 ? 'critical-text' : ''}>{x.days}</strong></td><td>{x.owner}</td><td><button className="btn small" aria-label={`Send reminder to ${x.owner} about ${x.audit_ref}`} onClick={() => showToast(`Reminder queued for ${x.owner} (simulation).`)}>Send reminder</button></td></tr>)}</tbody></Table>
+        <tbody>{queue.map(x => <tr key={x.id}><td><strong>{x.audit_ref}</strong></td><td><WardCell id={x.ward_id} /></td><td>{x.waiting_for}</td><td className="nowrap">{fmtDate(x.since_date)}</td><td><strong className={x.days > 30 ? 'critical-text' : ''}>{x.days}</strong></td><td>{x.owner}</td><td><Can perm="audit.write"><button className="btn small" aria-label={`Send reminder to ${x.owner} about ${x.audit_ref}`} onClick={() => showToast(`Reminder queued for ${x.owner} (simulation).`)}>Send reminder</button></Can></td></tr>)}</tbody></Table>
     </Section>
   </>;
 }

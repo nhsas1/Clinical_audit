@@ -1,13 +1,17 @@
 import { Component, useEffect, useRef, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, FileText, Loader2, X } from 'lucide-react';
 import { band, bandLabel } from '../lib/utils';
+import { T } from '../lib/content';
+
+/** Wrap a string in <T> when it is static text (no digits, so counts stay live). */
+const editable = (v: ReactNode) => (typeof v === 'string' && !/\d/.test(v) ? <T>{v}</T> : v);
 
 export function PageIntro({ eyebrow = 'NURSING CLINICAL AUDIT', title, subtitle, action }: { eyebrow?: string; title: string; subtitle: string; action?: ReactNode }) {
-  return <div className="page-intro"><div><div className="eyebrow">{eyebrow}</div><h1>{title}</h1><p>{subtitle}</p></div>{action}</div>;
+  return <div className="page-intro"><div><div className="eyebrow"><T>{eyebrow}</T></div><h1><T>{title}</T></h1><p><T>{subtitle}</T></p></div>{action}</div>;
 }
 
 export function Kpi({ label, value, meta, tone = 'navy', icon: Icon }: { label: string; value: ReactNode; meta: string; tone?: string; icon: React.ElementType }) {
-  return <div className="kpi"><div className="kpi-top"><span>{label}</span><div className={'kpi-icon ' + tone}><Icon size={17} aria-hidden="true" /></div></div><strong>{value}</strong><small>{meta}</small></div>;
+  return <div className="kpi"><div className="kpi-top"><span><T>{label}</T></span><div className={'kpi-icon ' + tone}><Icon size={17} aria-hidden="true" /></div></div><strong>{value}</strong><small>{meta}</small></div>;
 }
 
 export function Status({ value }: { value: string }) {
@@ -19,15 +23,15 @@ export function Score({ value }: { value: number | null | undefined }) {
 }
 
 export function Section({ title, meta, children, action }: { title: string; meta?: string; children: ReactNode; action?: ReactNode }) {
-  return <section className="panel"><div className="panel-head"><div><h2>{title}</h2>{meta && <span>{meta}</span>}</div>{action}</div>{children}</section>;
+  return <section className="panel"><div className="panel-head"><div><h2>{editable(title)}</h2>{meta && <span>{editable(meta)}</span>}</div>{action}</div>{children}</section>;
 }
 
 export function Loading({ label = 'Loading records…' }: { label?: string }) {
-  return <div className="empty" role="status"><Loader2 size={22} className="spin" aria-hidden="true" /><span>{label}</span></div>;
+  return <div className="empty" role="status"><Loader2 size={22} className="spin" aria-hidden="true" /><span>{editable(label)}</span></div>;
 }
 
 export function Empty({ title = 'No records match these filters', hint = 'Try changing the ward filter or the status selection.' }: { title?: string; hint?: string }) {
-  return <div className="empty"><FileText size={24} aria-hidden="true" /><strong>{title}</strong><span>{hint}</span></div>;
+  return <div className="empty"><FileText size={24} aria-hidden="true" /><strong>{editable(title)}</strong><span>{editable(hint)}</span></div>;
 }
 
 /** Table shell: loading state first, empty state only once data has arrived. */
@@ -67,6 +71,6 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
   componentDidCatch(error: Error, info: ErrorInfo) { console.error('Page error', error, info.componentStack); }
   render() {
     if (!this.state.error) return this.props.children;
-    return <div className="empty module-empty" role="alert"><AlertTriangle size={28} aria-hidden="true" /><strong>This page could not be displayed</strong><span>Something in the sample data could not be shown. Other pages still work.</span><button className="btn" onClick={() => this.setState({ error: null })}>Try again</button></div>;
+    return <div className="empty module-empty" role="alert"><AlertTriangle size={28} aria-hidden="true" /><strong><T page="shell">This page could not be displayed</T></strong><span><T page="shell">Something in the sample data could not be shown. Other pages still work.</T></span><button className="btn" onClick={() => this.setState({ error: null })}>Try again</button></div>;
   }
 }

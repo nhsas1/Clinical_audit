@@ -87,3 +87,29 @@ ol.timeline{list-style:none;padding:0}
 .btn:disabled{opacity:.55;cursor:not-allowed}
 .btn[aria-disabled=true]{opacity:.55}
 @media(max-width:760px){.avatar-btn .role-badge{display:none}.top-actions .role-badge.sample{font-size:9px}}
+
+/* Edit page mode */
+.edit-toggle.on{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
+.edit-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 30px;background:var(--amber-bg);border-bottom:1px solid var(--amber);color:var(--text);font-size:12px;position:sticky;top:0;z-index:12}
+.edit-bar>svg{color:var(--amber)}
+.edit-bar .unsaved{font-style:normal;font-weight:600;color:var(--amber)}
+.edit-bar-actions{margin-left:auto;display:flex;gap:6px}
+.edit-bar.pending{background:var(--soft);border-color:var(--navy)}
+.editable{outline:1px dashed color-mix(in srgb,var(--teal) 70%,transparent);outline-offset:2px;border-radius:2px;cursor:text}
+.editable:hover,.editable.active{outline:2px solid var(--teal);background:color-mix(in srgb,var(--teal) 10%,transparent)}
+.editable.changed{outline-color:var(--navy)}
+.editable.draft{outline:2px solid var(--amber);background:var(--amber-bg)}
+.text-editor{position:fixed;z-index:40;width:min(360px,calc(100vw - 16px));background:var(--surface);border:1px solid var(--border);border-radius:5px;box-shadow:0 14px 40px rgba(0,0,0,.18);padding:12px}
+.text-editor-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.text-editor-head code{font-size:10px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.text-editor textarea{width:100%;font:inherit;font-size:13px;padding:8px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);resize:vertical}
+.text-editor-default{font-size:11px;color:var(--muted);margin:6px 0 8px;overflow-wrap:anywhere}
+.text-editor-default span{font-weight:600}
+.text-editor-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.text-editor-history{border-top:1px solid var(--border);margin-top:10px;padding-top:8px;max-height:180px;overflow:auto;font-size:11px}
+.text-editor-history ol{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.text-editor-history q{display:block;margin:2px 0}
+.text-editor-note{margin:8px 0 0}
+.link-btn{border:0;background:none;color:var(--navy);padding:0;font-size:11px;text-decoration:underline}
+.modal-text{font-size:13px;line-height:1.5;margin:0}
+@media(max-width:760px){.edit-bar{padding:8px 16px}.edit-bar-actions{margin-left:0;width:100%}.edit-bar-actions .btn{flex:1;justify-content:center}.edit-toggle{padding:6px 8px}}

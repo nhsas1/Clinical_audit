@@ -4,6 +4,7 @@ import { shortDept, useHub, EMPTY_SCOPE } from '../lib/store';
 import { heatmap, type AuditResult } from '../lib/derive';
 import { band, bandLabel, fmtDate } from '../lib/utils';
 import { Empty } from './ui';
+import { T } from '../lib/content';
 
 /** Hospital › Department › Ward filter. Changing a level resets the levels below it. */
 export function ScopeFilter() {
@@ -13,13 +14,13 @@ export function ScopeFilter() {
   const wards = hub.wards.filter(w => (!scope.hospital || w.hospital_id === scope.hospital) && (!scope.department || w.department_id === scope.department));
   const isFiltered = scope.hospital || scope.department || scope.ward;
   return <div className="scope-filter" role="group" aria-label="Filter every page by hospital, department and ward">
-    <label><span>Hospital</span><select value={scope.hospital} onChange={e => hub.setScope({ ...EMPTY_SCOPE, hospital: e.target.value })} aria-label="Hospital">
+    <label><span><T page="shell">Hospital</T></span><select value={scope.hospital} onChange={e => hub.setScope({ ...EMPTY_SCOPE, hospital: e.target.value })} aria-label="Hospital">
       <option value="">All hospitals</option>{hub.hospitals.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}</select></label>
-    <label><span>Department</span><select value={scope.department} disabled={!depts.length} onChange={e => hub.setScope({ ...scope, department: e.target.value, ward: '' })} aria-label="Department">
+    <label><span><T page="shell">Department</T></span><select value={scope.department} disabled={!depts.length} onChange={e => hub.setScope({ ...scope, department: e.target.value, ward: '' })} aria-label="Department">
       <option value="">{!scope.hospital ? 'Choose a hospital' : depts.length ? 'All departments' : 'No departments'}</option>{depts.map(d => <option key={d.id} value={d.id}>{shortDept(d.name)}</option>)}</select></label>
-    <label><span>Ward / unit</span><select value={scope.ward} onChange={e => { const w = hub.ward(e.target.value); hub.setScope(w ? { hospital: w.hospital_id, department: w.department_id ?? '', ward: w.id } : { ...scope, ward: '' }); }} aria-label="Ward or unit">
+    <label><span><T page="shell">Ward / unit</T></span><select value={scope.ward} onChange={e => { const w = hub.ward(e.target.value); hub.setScope(w ? { hospital: w.hospital_id, department: w.department_id ?? '', ward: w.id } : { ...scope, ward: '' }); }} aria-label="Ward or unit">
       <option value="">All wards ({wards.length})</option><WardOptions wards={wards} /></select></label>
-    {isFiltered && <button className="btn small" onClick={() => hub.setScope(EMPTY_SCOPE)}>Clear</button>}
+    {isFiltered && <button className="btn small" onClick={() => hub.setScope(EMPTY_SCOPE)}><T>Clear</T></button>}
   </div>;
 }
 

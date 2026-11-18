@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LockKeyhole, LogIn, LogOut, Mail, ShieldCheck } from 'lucide-react';
 import { useAuth, type Permission } from '../lib/auth';
 import { useEscape, PageIntro } from './ui';
+import { T } from '../lib/content';
 
 const ROLE_LABEL = { admin: 'Admin', auditor: 'Auditor', viewer: 'Viewer' } as const;
 
@@ -36,7 +37,7 @@ export function UserMenu() {
     </button>
     {open && <div className="menu" role="menu">
       <div className="menu-head"><strong>{auth.email}</strong><span>Role: {auth.role ? ROLE_LABEL[auth.role] : '…'}</span></div>
-      <button role="menuitem" className="menu-item" onClick={async () => { setOpen(false); await auth.signOut(); }}><LogOut size={15} aria-hidden="true" /> Sign out</button>
+      <button role="menuitem" className="menu-item" onClick={async () => { setOpen(false); await auth.signOut(); }}><LogOut size={15} aria-hidden="true" /> <T>Sign out</T></button>
     </div>}
   </div>;
 }
@@ -48,7 +49,7 @@ export function RequireSignIn({ children }: { children: ReactNode }) {
   if (!auth.enabled || auth.session) return <>{children}</>;
   if (!auth.ready) return null;
   return <><PageIntro title="Sign in to continue" subtitle="Dashboards are open to everyone. Registers, reports and directories need a signed-in account." />
-    <div className="empty module-empty"><LockKeyhole size={28} aria-hidden="true" /><strong>This page needs a signed-in account</strong><span>Ask an admin for access if you do not have an account.</span><Link className="btn primary" to="/signin" state={{ from: location.pathname }}><LogIn size={15} aria-hidden="true" /> Sign in</Link></div></>;
+    <div className="empty module-empty"><LockKeyhole size={28} aria-hidden="true" /><strong>This page needs a signed-in account</strong><span>Ask an admin for access if you do not have an account.</span><Link className="btn primary" to="/signin" state={{ from: location.pathname }}><LogIn size={15} aria-hidden="true" /> <T>Sign in</T></Link></div></>;
 }
 
 /** Shows children only when the current role has `perm`; otherwise an optional fallback. */

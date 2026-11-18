@@ -8,6 +8,7 @@ import { actionStatus, REPORT_STAGES, reportDate, reportStatus } from '../lib/de
 import { PASS_MARK, type Liaison, type Report } from '../lib/data';
 import { fmtDate, plural, showToast } from '../lib/utils';
 import { Drawer, Empty, Modal, PageIntro, Score, Section, Status, Table } from '../components/ui';
+import { T } from '../lib/content';
 import { useScoped } from './AuditPages';
 import { WardCell } from '../components/hierarchy';
 import { Can } from '../components/account';
@@ -18,7 +19,7 @@ const simulated = () => showToast('Files are not attached yet in this simulation
 
 export function Tools() {
   return <><PageIntro title="Audit tools" subtitle="Approved observation tools and electronic forms for nursing clinical audit." />
-    <div className="tool-grid">{tools.map(([name, version, count, date]) => <div className="tool-card" key={name}><div className="tool-icon"><FileCheck2 size={18} aria-hidden="true" /></div><div className="eyebrow">NURSING TOOL</div><h2>{name}</h2><div className="tool-meta"><span>Version <strong>{version}</strong></span><span><strong>{count}</strong> items</span><span>Reviewed <strong>{fmtDate(date)}</strong></span></div><div className="tool-actions"><button className="btn small" onClick={simulated} aria-label={`Word checklist for ${name}`}><Download size={13} aria-hidden="true" /> Word checklist</button><button className="btn small primary" onClick={simulated} aria-label={`Open form for ${name}`}><ExternalLink size={13} aria-hidden="true" /> Open Form</button></div></div>)}</div>
+    <div className="tool-grid">{tools.map(([name, version, count, date]) => <div className="tool-card" key={name}><div className="tool-icon"><FileCheck2 size={18} aria-hidden="true" /></div><div className="eyebrow">NURSING TOOL</div><h2>{name}</h2><div className="tool-meta"><span>Version <strong>{version}</strong></span><span><strong>{count}</strong> items</span><span>Reviewed <strong>{fmtDate(date)}</strong></span></div><div className="tool-actions"><button className="btn small" onClick={simulated} aria-label={`Word checklist for ${name}`}><Download size={13} aria-hidden="true" /> <T>Word checklist</T></button><button className="btn small primary" onClick={simulated} aria-label={`Open form for ${name}`}><ExternalLink size={13} aria-hidden="true" /> <T>Open Form</T></button></div></div>)}</div>
     <div className="notice"><LockKeyhole size={15} aria-hidden="true" /> Resource actions are simulated until a Supabase Storage file is uploaded.</div></>;
 }
 
@@ -32,10 +33,10 @@ export function Reports() {
   const rows = reports.filter(r => (status === 'All' || reportStatus(r) === status) && `${r.serial} ${r.title}`.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => b.serial.localeCompare(a.serial));
   const d = drawer?.report;
-  return <><PageIntro title="Reports" subtitle="Serialised audit reports with reference trails and lifecycle history." action={<Can perm="report.write"><button className="btn primary" onClick={simulated}><Upload size={15} aria-hidden="true" /> Upload report</button></Can>} />
+  return <><PageIntro title="Reports" subtitle="Serialised audit reports with reference trails and lifecycle history." action={<Can perm="report.write"><button className="btn primary" onClick={simulated}><Upload size={15} aria-hidden="true" /> <T>Upload report</T></button></Can>} />
     <Section title="Report register" meta={plural(rows.length, 'report') + ' in view'}>
       <div className="toolbar"><label className="search"><Search size={15} aria-hidden="true" /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search serial or title" aria-label="Search serial or title" /></label><div className="filters" role="group" aria-label="Filter by status">{['All', 'Draft', 'Under review', 'Approved', 'Published'].map(x => <button className={status === x ? 'chip active' : 'chip'} aria-pressed={status === x} onClick={() => setStatus(x)} key={x}>{x}</button>)}</div></div>
-      <Table loading={hub.loading} empty={!rows.length} className="sticky-first reports-table"><thead><tr><th>Serial no.</th><th>Report</th><th>Audit</th><th>Ward</th><th>Date</th><th>Score</th><th>Status</th><th>References</th><th>Track</th></tr></thead>
+      <Table loading={hub.loading} empty={!rows.length} className="sticky-first reports-table"><thead><tr><th><T>Serial no.</T></th><th><T>Report</T></th><th><T>Audit</T></th><th><T>Ward</T></th><th><T>Date</T></th><th><T>Score</T></th><th><T>Status</T></th><th><T>References</T></th><th><T>Track</T></th></tr></thead>
         <tbody>{rows.map(r => <tr key={r.serial}><td><strong>{r.serial}</strong></td><td>{r.title}</td><td>{r.audit_ref}</td><td><WardCell id={r.ward_id} /></td><td className="nowrap">{fmtDate(reportDate(r))}</td><td><Score value={scoreOf(r)} /></td><td><Status value={reportStatus(r)} /></td>
           <td><button className="icon-btn" onClick={() => setDrawer({ kind: 'ref', report: r })} aria-label={`View references for ${r.serial}`}><Link2 size={16} aria-hidden="true" /></button></td>
           <td><button className="btn small" onClick={() => setDrawer({ kind: 'track', report: r })} aria-label={`Track ${r.serial}`}>Track</button></td></tr>)}</tbody></Table>
@@ -61,18 +62,18 @@ export function Standards() {
   const [filter, setFilter] = useState('All');
   const [show, setShow] = useState(false);
   const rows = hub.references.filter(x => filter === 'All' || x.kind === filter);
-  return <><PageIntro title="Standards and policies" subtitle="The reference library behind audit methods, reports and improvement work." action={<Can perm="reference.write"><button className="btn primary" onClick={() => setShow(true)}><Link2 size={15} aria-hidden="true" /> Add link</button></Can>} />
+  return <><PageIntro title="Standards and policies" subtitle="The reference library behind audit methods, reports and improvement work." action={<Can perm="reference.write"><button className="btn primary" onClick={() => setShow(true)}><Link2 size={15} aria-hidden="true" /> <T>Add link</T></button></Can>} />
     <Section title="Reference library" meta={plural(rows.length, 'reference')} action={<div className="filters" role="group" aria-label="Filter by type">{['All', 'External standard', 'Internal policy', 'Audit method'].map(x => <button className={filter === x ? 'chip active' : 'chip'} aria-pressed={filter === x} onClick={() => setFilter(x)} key={x}>{x}</button>)}</div>}>
-      <Table loading={hub.loading} empty={!rows.length}><thead><tr><th>Code</th><th>Title</th><th>Type</th><th>Link</th></tr></thead><tbody>{rows.map(x => <tr key={x.code}><td><strong>{x.code}</strong></td><td>{x.title}</td><td><Status value={x.kind} /></td><td>{x.url ? <a className="text-link" href={x.url} target="_blank" rel="noreferrer">Open source <ExternalLink size={12} aria-hidden="true" /></a> : <span className="muted">No external link</span>}</td></tr>)}</tbody></Table>
+      <Table loading={hub.loading} empty={!rows.length}><thead><tr><th><T>Code</T></th><th><T>Title</T></th><th><T>Type</T></th><th><T>Link</T></th></tr></thead><tbody>{rows.map(x => <tr key={x.code}><td><strong>{x.code}</strong></td><td>{x.title}</td><td><Status value={x.kind} /></td><td>{x.url ? <a className="text-link" href={x.url} target="_blank" rel="noreferrer">Open source <ExternalLink size={12} aria-hidden="true" /></a> : <span className="muted">No external link</span>}</td></tr>)}</tbody></Table>
     </Section>
-    {show && <Modal label="Add internal link" eyebrow="REFERENCE LIBRARY" onClose={() => setShow(false)}><label>Reference title<input placeholder="Internal policy title" /></label><label>URL<input placeholder="https://..." /></label><div className="modal-actions"><button className="btn" onClick={() => setShow(false)}>Cancel</button><button className="btn primary" onClick={() => { setShow(false); showToast('Saving links needs a signed-in admin (not enabled yet).'); }}>Save link</button></div></Modal>}
+    {show && <Modal label="Add internal link" eyebrow="REFERENCE LIBRARY" onClose={() => setShow(false)}><label>Reference title<input placeholder="Internal policy title" /></label><label>URL<input placeholder="https://..." /></label><div className="modal-actions"><button className="btn" onClick={() => setShow(false)}><T>Cancel</T></button><button className="btn primary" onClick={() => { setShow(false); showToast('Saving links needs a signed-in admin (not enabled yet).'); }}><T>Save link</T></button></div></Modal>}
   </>;
 }
 
 export function Initiatives() {
   const hub = useHub();
   const rows = hub.initiatives.filter(x => hub.inScope(x.ward_id));
-  return <><PageIntro title="Quality initiatives" subtitle="PDSA workstreams turning audit findings into measurable improvement." action={<Can perm="audit.write"><button className="btn primary" onClick={() => showToast('Adding initiatives is not enabled in this simulation yet.')}><Sparkles size={15} aria-hidden="true" /> Add initiative</button></Can>} />
+  return <><PageIntro title="Quality initiatives" subtitle="PDSA workstreams turning audit findings into measurable improvement." action={<Can perm="audit.write"><button className="btn primary" onClick={() => showToast('Adding initiatives is not enabled in this simulation yet.')}><Sparkles size={15} aria-hidden="true" /> <T>Add initiative</T></button></Can>} />
     {!rows.length ? <section className="panel"><Empty title="No initiatives for this ward" hint="Choose another ward or All wards in the filter at the top." /></section> :
       <div className="initiative-grid">{rows.map(x => <div className="initiative-card" key={x.ref}><div className="initiative-top"><strong>{x.ref}</strong><Status value={x.stage} /></div><h2>{x.title}</h2><div className="muted">{hub.wardName(x.ward_id)} ({hub.wardContext(x.ward_id)}) · {x.category} · {x.lead}</div><div className="pdsa" aria-label={`PDSA stage: ${x.stage}`}>{['Plan', 'Do', 'Study', 'Act'].map(s => <span className={s === x.stage ? 'current' : ''} key={s}>{s}</span>)}</div><div className="initiative-progress" role="img" aria-label={`${x.progress}% complete`}><i style={{ width: `${x.progress}%` }} /></div><div className="initiative-foot"><span>{x.progress}% complete</span><strong>{x.measure}</strong></div></div>)}</div>}
   </>;
@@ -84,7 +85,7 @@ export function Training() {
   const rows = learning.filter(x => cat === 'All' || x[2] === cat);
   return <><PageIntro title="Training library" subtitle="Short, practical learning resources for quality and audit readiness." />
     <div className="filters category-filters" role="group" aria-label="Filter by category">{cats.map(x => <button className={cat === x ? 'chip active' : 'chip'} aria-pressed={cat === x} onClick={() => setCat(x)} key={x}>{x}</button>)}</div>
-    <Section title="Learning resources" meta={plural(rows.length, 'resource')}><Table empty={!rows.length}><thead><tr><th>Title</th><th>Format</th><th>Category</th><th>Level</th><th>Minutes</th><th><span className="sr-only">Open</span></th></tr></thead><tbody>{rows.map(x => <tr key={x[0]}><td><strong>{x[0]}</strong></td><td>{x[1]}</td><td>{x[2]}</td><td>{x[3]}</td><td>{x[4]}</td><td><button className="btn small" onClick={simulated} aria-label={`Open ${x[0]}`}><ExternalLink size={13} aria-hidden="true" /> Open</button></td></tr>)}</tbody></Table></Section></>;
+    <Section title="Learning resources" meta={plural(rows.length, 'resource')}><Table empty={!rows.length}><thead><tr><th><T>Title</T></th><th><T>Format</T></th><th><T>Category</T></th><th><T>Level</T></th><th><T>Minutes</T></th><th><span className="sr-only">Open</span></th></tr></thead><tbody>{rows.map(x => <tr key={x[0]}><td><strong>{x[0]}</strong></td><td>{x[1]}</td><td>{x[2]}</td><td>{x[3]}</td><td>{x[4]}</td><td><button className="btn small" onClick={simulated} aria-label={`Open ${x[0]}`}><ExternalLink size={13} aria-hidden="true" /> <T>Open</T></button></td></tr>)}</tbody></Table></Section></>;
 }
 
 function PassFail({ score }: { score: number }) { return <Status value={score >= PASS_MARK ? 'Pass' : 'Fail'} />; }
@@ -133,7 +134,7 @@ export function Certificates() {
     </Section>
       <div>{result ? <div className={result.passed ? 'result-card passed' : 'result-card failed'} role="status"><ShieldCheck size={26} aria-hidden="true" /><div className="eyebrow">EXAM RESULT</div><h2>{result.passed ? 'Pass' : 'Fail'}</h2><strong className="result-score">{result.score}%</strong><p>{result.passed ? `Certificate ${result.number} has been issued.` : `Below the ${PASS_MARK}% pass mark. Review the learning resources and try again.`}</p>{result.passed && <button className="btn primary" onClick={download}><Download size={15} aria-hidden="true" /> Download PDF</button>}</div>
         : <div className="certificate-note"><ShieldCheck size={25} aria-hidden="true" /><strong>Automatic certificate</strong><p>Answers are scored by the Supabase database function. Correct answers are never sent to the browser.</p></div>}</div></div>
-    <Section title="Certificate register" meta="Fictional register preview"><Table empty={!register.length}><thead><tr><th>Trainee</th><th>Ward</th><th>Course</th><th>Score</th><th>Result</th><th>Certificate number</th></tr></thead><tbody>{register.map(c => <tr key={c.trainee + c.course}><td>{c.trainee}</td><td><WardCell id={c.ward_id} /></td><td>{c.course}</td><td className="score">{c.score}%</td><td><PassFail score={c.score} /></td><td>{c.number ?? '— (retake required)'}</td></tr>)}</tbody></Table></Section></>;
+    <Section title="Certificate register" meta="Fictional register preview"><Table empty={!register.length}><thead><tr><th><T>Trainee</T></th><th><T>Ward</T></th><th><T>Course</T></th><th><T>Score</T></th><th><T>Result</T></th><th><T>Certificate number</T></th></tr></thead><tbody>{register.map(c => <tr key={c.trainee + c.course}><td>{c.trainee}</td><td><WardCell id={c.ward_id} /></td><td>{c.course}</td><td className="score">{c.score}%</td><td><PassFail score={c.score} /></td><td>{c.number ?? '— (retake required)'}</td></tr>)}</tbody></Table></Section></>;
 }
 
 const TRAINING_STATUSES: Liaison['training_status'][] = ['Trained', 'Refresher due', 'Not yet trained'];
@@ -165,8 +166,8 @@ export function Liaisons() {
     showToast(hub.source === 'supabase' ? 'Directory saved.' : 'Directory updated (sample mode, not saved).');
   }
   return <><PageIntro title="Quality liaisons" subtitle="A ward-by-ward view of the nursing quality liaison network." action={editing
-    ? <div className="btn-row"><button className="btn" onClick={() => setDraft(null)}>Cancel</button><button className="btn primary" onClick={save} disabled={saving}><Save size={15} aria-hidden="true" /> {saving ? 'Saving…' : 'Save directory'}</button></div>
-    : <Can perm="liaison.write"><button className="btn primary" onClick={() => setDraft(hub.liaisons)}><Pencil size={15} aria-hidden="true" /> Edit directory</button></Can>} />
+    ? <div className="btn-row"><button className="btn" onClick={() => setDraft(null)}><T>Cancel</T></button><button className="btn primary" onClick={save} disabled={saving}><Save size={15} aria-hidden="true" /> {saving ? 'Saving…' : 'Save directory'}</button></div>
+    : <Can perm="liaison.write"><button className="btn primary" onClick={() => setDraft(hub.liaisons)}><Pencil size={15} aria-hidden="true" /> <T>Edit directory</T></button></Can>} />
     <div className="notice sample-note"><LockKeyhole size={15} aria-hidden="true" /> <strong>Sample data.</strong> Names and extensions are fictional. Use the Hospital and Department filters at the top to narrow the directory.</div>
     {editing && <div className="notice" role="status"><Pencil size={15} aria-hidden="true" /> Editing the directory. Unsaved changes are kept until you save or cancel.</div>}
     <div className="kpi-grid kpi-grid-3">
@@ -176,7 +177,7 @@ export function Liaisons() {
     </div>
     <Section title="Liaison directory" meta={plural(rows.length, 'liaison') + ' in view'}>
       <label className="search liaison-search"><Search size={15} aria-hidden="true" /><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search ward, hospital or liaison" aria-label="Search ward, hospital or liaison" /></label>
-      <Table loading={hub.loading} empty={!rows.length} className="sticky-first"><thead><tr><th>Ward</th><th>Quality liaison</th><th>Role</th><th>Extension</th><th>Training status</th><th>Last meeting</th></tr></thead>
+      <Table loading={hub.loading} empty={!rows.length} className="sticky-first"><thead><tr><th><T>Ward</T></th><th><T>Quality liaison</T></th><th><T>Role</T></th><th><T>Extension</T></th><th><T>Training status</T></th><th><T>Last meeting</T></th></tr></thead>
         <tbody>{rows.map(x => { const label = `${hub.wardName(x.ward_id)} (${hub.wardContext(x.ward_id)})`; return <tr key={x.ward_id}><td><strong><WardCell id={x.ward_id} /></strong></td>
           {editing ? <>
             <td><input aria-label={`Liaison name for ${label}`} value={x.name} onChange={e => update(x.ward_id, { name: e.target.value })} /></td>

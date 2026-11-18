@@ -10,6 +10,8 @@ import { Certificates, Initiatives, Liaisons, Reports, Standards, Tools, Trainin
 import { plural } from './lib/utils';
 import { AuthProvider, isPublicPath, useAuth } from './lib/auth';
 import { RequireSignIn, SignIn, UserMenu } from './components/account';
+import { ContentPage, ContentProvider, T } from './lib/content';
+import { EditBar, EditToggle, TextEditor } from './components/editing';
 
 type NavItem = { href: string; label: string; icon: React.ElementType; badge?: 'pending' | 'actions' };
 const navGroups: { label: string; items: NavItem[] }[] = [
@@ -38,6 +40,7 @@ function Shell() {
   useEffect(() => { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; }, [dark]);
   useEffect(() => { document.title = `${title} · Nursing Audit Hub`; }, [title]);
   useEscape(mobile, () => setMobile(false));
+  const pageName = path.startsWith('/verify') ? 'verify' : path.replace(/^\//, '') || 'overview';
   const headerHospital = hub.scope.hospital ? hub.hospital(hub.scope.hospital)?.name ?? 'All hospitals' : 'All hospitals';
   const badge = (b?: NavItem['badge']) => hub.loading || !b ? null : b === 'pending'
     ? { n: queue.length, label: plural(queue.length, 'pending audit') }
@@ -45,8 +48,8 @@ function Shell() {
 
   return <div className="app-shell">
     <aside className={mobile ? 'sidebar open' : 'sidebar'} aria-label="Main navigation">
-      <div className="brand"><div className="brand-mark"><ShieldCheck size={19} aria-hidden="true" /></div><div><div className="brand-name">Nursing Audit</div><div className="brand-sub">Clinical quality hub</div></div><button className="icon-btn mobile-close" onClick={() => setMobile(false)} aria-label="Close navigation"><X size={18} aria-hidden="true" /></button></div>
-      <nav>{navGroups.map(group => <div className="nav-group" key={group.label}><div className="nav-label">{group.label}</div>{group.items.map(item => { const Icon = item.icon; const b = badge(item.badge); return <NavLink onClick={() => setMobile(false)} className={({ isActive }) => isActive || (item.href === '/overview' && location.pathname === '/') ? 'nav-item active' : 'nav-item'} to={item.href} key={item.href}><Icon size={17} aria-hidden="true" /><span>{item.label}</span>{locked(item.href) ? <LockKeyhole size={13} className="nav-lock" aria-label="Sign-in needed" /> : b && b.n > 0 && <span className="nav-badge" aria-label={b.label}>{b.n}</span>}</NavLink>; })}</div>)}</nav>
+      <div className="brand"><div className="brand-mark"><ShieldCheck size={19} aria-hidden="true" /></div><div><div className="brand-name"><T page="shell">Nursing Audit</T></div><div className="brand-sub"><T page="shell">Clinical quality hub</T></div></div><button className="icon-btn mobile-close" onClick={() => setMobile(false)} aria-label="Close navigation"><X size={18} aria-hidden="true" /></button></div>
+      <nav>{navGroups.map(group => <div className="nav-group" key={group.label}><div className="nav-label"><T page="shell">{group.label}</T></div>{group.items.map(item => { const Icon = item.icon; const b = badge(item.badge); return <NavLink onClick={() => setMobile(false)} className={({ isActive }) => isActive || (item.href === '/overview' && location.pathname === '/') ? 'nav-item active' : 'nav-item'} to={item.href} key={item.href}><Icon size={17} aria-hidden="true" /><span><T page="shell">{item.label}</T></span>{locked(item.href) ? <LockKeyhole size={13} className="nav-lock" aria-label="Sign-in needed" /> : b && b.n > 0 && <span className="nav-badge" aria-label={b.label}>{b.n}</span>}</NavLink>; })}</div>)}</nav>
       <div className="sidebar-foot"><div className="user-chip"><ShieldCheck size={16} aria-hidden="true" /><div><strong>{!auth.enabled ? 'Sample mode' : auth.session ? auth.email : 'Signed out'}</strong><span>{!auth.enabled ? 'Nothing is saved' : auth.session ? `Role: ${auth.role ?? '…'}` : 'Dashboards only'}</span></div></div></div>
     </aside>
     {mobile && <div className="sidebar-scrim" onClick={() => setMobile(false)} aria-hidden="true" />}
@@ -56,12 +59,15 @@ function Shell() {
         <div className="crumb"><span className="crumb-hospital">{headerHospital}</span><ChevronRight size={14} aria-hidden="true" /><strong>{title}</strong></div>
         <div className="top-actions">
           <button className="icon-btn" onClick={() => setDark(!dark)} aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}>{dark ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}</button>
+          <EditToggle />
           <UserMenu />
         </div>
       </header>
+      <EditBar />
       <div className="filter-bar"><ScopeFilter /></div>
       <nav className="mobile-nav" aria-label="Pages">{allItems.map(item => <NavLink key={item.href} to={item.href}>{item.label}</NavLink>)}</nav>
       <section className="page-wrap">
+        <ContentPage name={pageName}>
         <ErrorBoundary key={location.pathname}>
           <Routes>
             <Route path="/" element={<Overview />} /><Route path="/overview" element={<Overview />} />
@@ -71,13 +77,15 @@ function Shell() {
             <Route path="*" element={<><PageIntro title="Page not found" subtitle="This address does not match a page in the hub. Use the navigation to continue." /></>} />
           </Routes>
         </ErrorBoundary>
+        </ContentPage>
       </section>
-      <footer>Simulation with sample data. Not for clinical or operational use.</footer>
+      <footer><T page="shell">Simulation with sample data. Not for clinical or operational use.</T></footer>
+      <TextEditor />
       <ToastHost />
     </main>
   </div>;
 }
 
 export default function App() {
-  return <AuthProvider><HubProvider><Shell /></HubProvider></AuthProvider>;
+  return <AuthProvider><ContentProvider><HubProvider><Shell /></HubProvider></ContentProvider></AuthProvider>;
 }

@@ -3,10 +3,11 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Too
 import { AlertTriangle, ArrowUpRight, CalendarDays, CheckCircle2, ChevronRight, ClipboardCheck, Hospital, ShieldCheck } from 'lucide-react';
 import { useHub } from '../lib/store';
 import {
-  actionStatus, auditResults, complianceByStandard, complianceTrend, heatmap, openActions, pendingQueue,
-  plannedStatus, reportStatus, upcomingAudits, wardsAudited, type AuditResult,
+  actionStatus, auditResults, complianceByStandard, complianceTrend, openActions, pendingQueue,
+  plannedStatus, reportStatus, upcomingAudits, wardsAudited,
 } from '../lib/derive';
 import { band, bandLabel, fmtDate, plural, showToast } from '../lib/utils';
+import { GroupedHeatmap, WardCell, WardOptions } from '../components/hierarchy';
 import { Empty, Kpi, Loading, Modal, PageIntro, Score, Section, Status, Table } from '../components/ui';
 import type { UnplannedAudit } from '../lib/data';
 
@@ -16,7 +17,7 @@ const YEAR = 2026;
 export function useScoped() {
   const hub = useHub();
   return useMemo(() => {
-    const s = <T extends { ward: string }>(rows: T[]) => rows.filter(r => hub.inScope(r.ward));
+    const s = <T extends { ward_id: string }>(rows: T[]) => rows.filter(r => hub.inScope(r.ward_id));
     const planned = s(hub.planned), unplanned = s(hub.unplanned), actions = s(hub.actions), reports = s(hub.reports);
     const queue = pendingQueue(s(hub.pending), planned, reports);
     const results = auditResults(planned, unplanned, reports);
@@ -27,9 +28,8 @@ export function useScoped() {
 export function Overview() {
   const hub = useHub();
   const { planned, unplanned, queue, results, open } = useScoped();
-  const [cell, setCell] = useState<AuditResult | { ward: string; topic: string; score: null } | null>(null);
   const topics = hub.topics.map(t => t.name);
-  const wards = hub.wards.map(w => w.name).filter(w => hub.inScope(w));
+  const wardTotal = hub.scopedWards.length;
   const audited = wardsAudited(results, YEAR);
   const completed = planned.filter(a => plannedStatus(a) === 'Completed').length;
   const overduePlanned = planned.filter(a => plannedStatus(a) === 'Overdue').length;
@@ -38,9 +38,8 @@ export function Overview() {
   const overdueActions = open.filter(a => actionStatus(a) === 'Overdue').length;
   const trend = complianceTrend(results, YEAR);
   const standards = complianceByStandard(topics, results);
-  const grid = heatmap(wards, topics, results);
   const upcoming = upcomingAudits(planned).slice(0, 4);
-  const scopeLabel = hub.ward === 'All wards' ? 'All wards' : hub.ward;
+  const scopeLabel = hub.scopeLabel;
 
   if (hub.loading) return <><PageIntro title="Overview" subtitle="A current view of nursing audit activity, compliance and improvement work." /><Loading label="Loading audit data…" /></>;
 
@@ -48,7 +47,7 @@ export function Overview() {
     <PageIntro title="Overview" subtitle="A current view of nursing audit activity, compliance and improvement work." action={<button className="btn primary" onClick={() => window.print()}><ArrowUpRight size={16} aria-hidden="true" /> Export snapshot</button>} />
     {hub.error && <div className="notice warning"><AlertTriangle size={16} aria-hidden="true" />{hub.error}</div>}
     <div className="kpi-grid">
-      <Kpi label="Wards audited this year" value={<>{audited.size} <small>/ {wards.length}</small></>} meta={`${plural(results.filter(r => r.date.startsWith(String(YEAR))).length, 'scored audit')} in ${YEAR}`} icon={Hospital} />
+      <Kpi label="Wards audited this year" value={<>{audited.size} <small>/ {wardTotal}</small></>} meta={`${plural(results.filter(r => r.date.startsWith(String(YEAR))).length, 'scored audit')} in ${YEAR}`} icon={Hospital} />
       <Kpi label="Planned audits" value={`${completed} / ${planned.length}`} meta={overduePlanned ? `Completed this year · ${overduePlanned} overdue` : 'Completed this year'} tone="teal" icon={CalendarDays} />
       <Kpi label="Unplanned audits" value={String(openUnplanned.length)} meta={`Open · ${highOpen} high priority`} tone="amber" icon={AlertTriangle} />
       <Kpi label="Pending audits" value={String(queue.length)} meta={queue.length ? `Longest wait ${plural(queue[0].days, 'day')}` : 'Nothing waiting'} tone="red" icon={ClipboardCheck} />
@@ -78,26 +77,16 @@ export function Overview() {
         </div>)}</div>
       </Section>
     </div>
-    <Section title="Ward by standard" meta="Latest audit result per cell · select a cell for its source audit">
-      {grid.length ? <div className="heatmap-wrap"><table className="heatmap"><thead><tr><th scope="col">Ward</th>{topics.map(s => <th scope="col" key={s}>{s}</th>)}</tr></thead>
-        <tbody>{grid.map(row => <tr className={hub.ward === row.ward ? 'selected-row' : ''} key={row.ward}><th scope="row">{row.ward}</th>
-          {row.cells.map((r, i) => <td key={topics[i]}><button type="button" className={'heat ' + (r ? band(r.score) : 'none')}
-            aria-label={r ? `${row.ward}, ${topics[i]}: ${r.score}% from ${r.source}` : `${row.ward}, ${topics[i]}: not audited`}
-            aria-pressed={cell?.ward === row.ward && cell?.topic === topics[i]}
-            onClick={() => setCell(r ?? { ward: row.ward, topic: topics[i], score: null })}>{r ? `${r.score}%` : '—'}</button></td>)}
-        </tr>)}</tbody></table></div> : <Empty />}
-      <div className="legend"><span><i className="dot good" />90%+ On target</span><span><i className="dot warning" />80–89% Watch</span><span><i className="dot critical" />Below 80% Needs action</span><span><i className="dot none" />— Not audited</span></div>
-      {cell && <div className="cell-detail" role="status">{cell.score == null
-        ? <><strong>{cell.ward} · {cell.topic}</strong><span>No scored audit for this ward and standard yet.</span></>
-        : <><strong>{cell.ward} · {cell.topic}: {cell.score}%</strong><span>From audit {(cell as AuditResult).source}, {fmtDate((cell as AuditResult).date)} · {bandLabel(cell.score)}</span></>}</div>}
+    <Section title="Ward by standard" meta="Latest audit result per cell, grouped by hospital and department · select a cell for its source audit">
+      <GroupedHeatmap topics={topics} results={results} />
     </Section>
     <div className="grid-2">
       <Section title="Needs attention" meta="Longest-waiting pending audits">
-        {queue.length ? <div className="compact-list">{queue.slice(0, 4).map(x => <div className="list-row" key={x.id}><div><strong>{x.audit_ref}</strong><span>{x.waiting_for} · {x.ward}</span></div><strong className={x.days > 30 ? 'critical-text' : ''}>{plural(x.days, 'day')}</strong></div>)}</div>
+        {queue.length ? <div className="compact-list">{queue.slice(0, 4).map(x => <div className="list-row" key={x.id}><div><strong>{x.audit_ref}</strong><span>{x.waiting_for} · {hub.wardName(x.ward_id)} ({hub.wardContext(x.ward_id)})</span></div><strong className={x.days > 30 ? 'critical-text' : ''}>{plural(x.days, 'day')}</strong></div>)}</div>
           : <Empty title="Nothing waiting" hint="No pending audits in this scope." />}
       </Section>
       <Section title="Coming up" meta="Next scheduled audits">
-        {upcoming.length ? <div className="compact-list">{upcoming.map(x => <div className="list-row" key={x.ref}><div><strong>{x.ref} · {x.topic}</strong><span>{x.ward} · {fmtDate(x.due_date)}</span></div><Status value={plannedStatus(x)} /></div>)}</div>
+        {upcoming.length ? <div className="compact-list">{upcoming.map(x => <div className="list-row" key={x.ref}><div><strong>{x.ref} · {x.topic}</strong><span>{hub.wardName(x.ward_id)} ({hub.wardContext(x.ward_id)}) · {fmtDate(x.due_date)}</span></div><Status value={plannedStatus(x)} /></div>)}</div>
           : <Empty title="No scheduled audits" hint="Nothing is scheduled from today onwards in this scope." />}
       </Section>
     </div>
@@ -119,7 +108,7 @@ export function Planned() {
     })}</div>
     <Section title="Programme register" meta={plural(rows.length, 'audit') + ' in view'} action={<div className="filters" role="group" aria-label="Filter by status">{['All', 'Completed', 'In progress', 'Scheduled', 'Overdue'].map(x => <button className={status === x ? 'chip active' : 'chip'} aria-pressed={status === x} onClick={() => setStatus(x)} key={x}>{x}</button>)}</div>}>
       <Table loading={hub.loading} empty={!rows.length}><thead><tr><th>Ref</th><th>Audit topic</th><th>Ward</th><th>Quarter</th><th>Due date</th><th>Auditor</th><th>Status</th><th>Score</th></tr></thead>
-        <tbody>{rows.map(x => <tr key={x.ref}><td><strong>{x.ref}</strong></td><td>{x.topic}</td><td>{x.ward}</td><td>{x.quarter}</td><td className="nowrap">{fmtDate(x.due_date)}</td><td>{x.auditor}</td><td><Status value={plannedStatus(x)} /></td><td><Score value={x.score} /></td></tr>)}</tbody></Table>
+        <tbody>{rows.map(x => <tr key={x.ref}><td><strong>{x.ref}</strong></td><td>{x.topic}</td><td><WardCell id={x.ward_id} /></td><td>{x.quarter}</td><td className="nowrap">{fmtDate(x.due_date)}</td><td>{x.auditor}</td><td><Status value={plannedStatus(x)} /></td><td><Score value={x.score} /></td></tr>)}</tbody></Table>
     </Section>
   </>;
 }
@@ -130,13 +119,14 @@ export function Unplanned() {
   const hub = useHub();
   const { unplanned } = useScoped();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ subject: '', trigger: TRIGGERS[0], priority: 'Medium', ward: '' });
+  const [form, setForm] = useState({ subject: '', trigger: TRIGGERS[0], priority: 'Medium', ward_id: hub.scope.ward });
   const counts = TRIGGERS.map(t => ({ name: t, count: unplanned.filter(x => x.trigger_type === t).length }));
   function save() {
-    const next: UnplannedAudit = { ref: `UA-${String(hub.unplanned.length + 1).padStart(3, '0')}`, trigger_type: form.trigger, subject: form.subject.trim() || 'New simulation request', ward: form.ward || (hub.ward !== 'All wards' ? hub.ward : hub.wards[0]?.name ?? ''), raised_on: new Date().toISOString().slice(0, 10), priority: form.priority as UnplannedAudit['priority'], status: 'Open', description: '' };
+    if (!form.ward_id) { showToast('Choose a ward for the request.'); return; }
+    const next: UnplannedAudit = { ref: `UA-${String(hub.unplanned.length + 1).padStart(3, '0')}`, trigger_type: form.trigger, subject: form.subject.trim() || 'New simulation request', ward_id: form.ward_id, raised_on: new Date().toISOString().slice(0, 10), priority: form.priority as UnplannedAudit['priority'], status: 'Open', description: '' };
     hub.setUnplanned([...hub.unplanned, next]);
     setOpen(false);
-    setForm({ subject: '', trigger: TRIGGERS[0], priority: 'Medium', ward: '' });
+    setForm({ subject: '', trigger: TRIGGERS[0], priority: 'Medium', ward_id: hub.scope.ward });
     showToast(`${next.ref} added for this session (simulation, not saved).`);
   }
   return <>
@@ -148,12 +138,12 @@ export function Unplanned() {
       <Section title="Response note" meta="Simulation workflow"><div className="callout"><ShieldCheck size={22} aria-hidden="true" /><div><strong>Escalation is visible</strong><p>High-priority requests remain visible until their status is closed. This prototype does not send operational notifications.</p></div></div></Section>
     </div>
     <Section title="Unplanned audit log" meta={hub.loading ? 'Loading…' : plural(unplanned.length, 'record')}>
-      <Table loading={hub.loading} empty={!unplanned.length} emptyHint="Try changing the ward filter."><thead><tr><th>Ref</th><th>Trigger</th><th>Subject</th><th>Ward</th><th>Date raised</th><th>Priority</th><th>Status</th></tr></thead>
-        <tbody>{unplanned.map(x => <tr key={x.ref}><td><strong>{x.ref}</strong></td><td>{x.trigger_type}</td><td>{x.subject}</td><td>{x.ward}</td><td className="nowrap">{fmtDate(x.raised_on)}</td><td><Status value={x.priority} /></td><td><Status value={x.status} /></td></tr>)}</tbody></Table>
+      <Table loading={hub.loading} empty={!unplanned.length} emptyHint="Try changing the hospital or ward filter."><thead><tr><th>Ref</th><th>Trigger</th><th>Subject</th><th>Ward</th><th>Date raised</th><th>Priority</th><th>Status</th></tr></thead>
+        <tbody>{unplanned.map(x => <tr key={x.ref}><td><strong>{x.ref}</strong></td><td>{x.trigger_type}</td><td>{x.subject}</td><td><WardCell id={x.ward_id} /></td><td className="nowrap">{fmtDate(x.raised_on)}</td><td><Status value={x.priority} /></td><td><Status value={x.status} /></td></tr>)}</tbody></Table>
     </Section>
     {open && <Modal label="Request an unplanned audit" eyebrow="NEW REQUEST" onClose={() => setOpen(false)}>
       <label>Subject<input value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} placeholder="Describe the audit topic" /></label>
-      <label>Ward<select value={form.ward} onChange={e => setForm({ ...form, ward: e.target.value })}><option value="">{hub.ward !== 'All wards' ? hub.ward : 'Select a ward'}</option>{hub.wards.map(w => <option key={w.id}>{w.name}</option>)}</select></label>
+      <label>Ward<select value={form.ward_id} onChange={e => setForm({ ...form, ward_id: e.target.value })}><option value="">Select a ward</option><WardOptions wards={hub.scopedWards} /></select></label>
       <label>Trigger<select value={form.trigger} onChange={e => setForm({ ...form, trigger: e.target.value })}>{TRIGGERS.map(t => <option key={t}>{t}</option>)}</select></label>
       <label>Priority<select value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })}><option>Medium</option><option>High</option><option>Low</option></select></label>
       <div className="modal-actions"><button className="btn" onClick={() => setOpen(false)}>Cancel</button><button className="btn primary" onClick={save}>Save request</button></div>
@@ -174,7 +164,7 @@ export function Pending() {
     </div>
     <Section title="Queue by waiting time" meta={plural(queue.length, 'pending audit')}>
       <Table loading={hub.loading} empty={!queue.length} emptyTitle="Nothing waiting" emptyHint="No pending audits in this scope."><thead><tr><th>Audit ref</th><th>Ward</th><th>Waiting for</th><th>Since</th><th>Days waiting</th><th>Owner</th><th><span className="sr-only">Actions</span></th></tr></thead>
-        <tbody>{queue.map(x => <tr key={x.id}><td><strong>{x.audit_ref}</strong></td><td>{x.ward}</td><td>{x.waiting_for}</td><td className="nowrap">{fmtDate(x.since_date)}</td><td><strong className={x.days > 30 ? 'critical-text' : ''}>{x.days}</strong></td><td>{x.owner}</td><td><button className="btn small" aria-label={`Send reminder to ${x.owner} about ${x.audit_ref}`} onClick={() => showToast(`Reminder queued for ${x.owner} (simulation).`)}>Send reminder</button></td></tr>)}</tbody></Table>
+        <tbody>{queue.map(x => <tr key={x.id}><td><strong>{x.audit_ref}</strong></td><td><WardCell id={x.ward_id} /></td><td>{x.waiting_for}</td><td className="nowrap">{fmtDate(x.since_date)}</td><td><strong className={x.days > 30 ? 'critical-text' : ''}>{x.days}</strong></td><td>{x.owner}</td><td><button className="btn small" aria-label={`Send reminder to ${x.owner} about ${x.audit_ref}`} onClick={() => showToast(`Reminder queued for ${x.owner} (simulation).`)}>Send reminder</button></td></tr>)}</tbody></Table>
     </Section>
   </>;
 }
@@ -186,7 +176,7 @@ export function Actions() {
     <PageIntro title="Action plans" subtitle="Corrective actions remain visible until evidence of improvement is complete." />
     <Section title="Corrective action register" meta={`${plural(actions.length, 'action')} in view · ${openActions(actions).length} open`}>
       <Table loading={hub.loading} empty={!actions.length}><thead><tr><th>Ref</th><th>Standard</th><th>Ward</th><th>Finding</th><th>Source</th><th>Owner</th><th>Due</th><th>Progress</th><th>Status</th></tr></thead>
-        <tbody>{actions.map(x => { const rep = reports.find(r => r.audit_ref === x.audit_ref); return <tr key={x.ref}><td><strong>{x.ref}</strong></td><td>{x.topic}</td><td>{x.ward}</td><td className="finding">{x.finding}</td><td className="nowrap">{x.audit_ref ?? '—'}{rep && <small className="muted block">{rep.serial} · {reportStatus(rep)}</small>}</td><td>{x.owner}</td><td className="nowrap">{fmtDate(x.due_date)}</td><td><div className="table-progress" role="img" aria-label={`${x.progress}% complete`}><i style={{ width: `${x.progress}%` }} /></div><small>{x.progress}%</small></td><td><Status value={actionStatus(x)} /></td></tr>; })}</tbody></Table>
+        <tbody>{actions.map(x => { const rep = reports.find(r => r.audit_ref === x.audit_ref); return <tr key={x.ref}><td><strong>{x.ref}</strong></td><td>{x.topic}</td><td><WardCell id={x.ward_id} /></td><td className="finding">{x.finding}</td><td className="nowrap">{x.audit_ref ?? '—'}{rep && <small className="muted block">{rep.serial} · {reportStatus(rep)}</small>}</td><td>{x.owner}</td><td className="nowrap">{fmtDate(x.due_date)}</td><td><div className="table-progress" role="img" aria-label={`${x.progress}% complete`}><i style={{ width: `${x.progress}%` }} /></div><small>{x.progress}%</small></td><td><Status value={actionStatus(x)} /></td></tr>; })}</tbody></Table>
     </Section>
   </>;
 }

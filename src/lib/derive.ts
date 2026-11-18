@@ -35,7 +35,7 @@ export function pendingQueue(pending: PendingAudit[], planned: PlannedAudit[], r
   const queued = new Set(rows.map(p => p.audit_ref));
   for (const a of planned) {
     if (!queued.has(a.ref) && plannedStatus(a, now) === 'Overdue') {
-      rows.push({ id: `auto-${a.ref}`, audit_ref: a.ref, ward: a.ward, waiting_for: 'Awaiting data collection', since_date: a.due_date, owner: a.auditor });
+      rows.push({ id: `auto-${a.ref}`, audit_ref: a.ref, ward_id: a.ward_id, waiting_for: 'Awaiting data collection', since_date: a.due_date, owner: a.auditor });
     }
   }
   return rows
@@ -72,18 +72,18 @@ export function reportDate(r: Report) {
 
 // ---------------------------------------------------------------- results
 
-export type AuditResult = { ward: string; topic: string; date: string; score: number; source: string };
+export type AuditResult = { ward_id: string; topic: string; date: string; score: number; source: string };
 
 /** Scored audit results: completed planned audits and closed, scored unplanned audits. */
 export function auditResults(planned: PlannedAudit[], unplanned: UnplannedAudit[], reports: Report[]): AuditResult[] {
   const out: AuditResult[] = [];
   for (const a of planned) {
-    if (a.status === 'Completed' && a.score != null) out.push({ ward: a.ward, topic: a.topic, date: a.due_date, score: Number(a.score), source: a.ref });
+    if (a.status === 'Completed' && a.score != null) out.push({ ward_id: a.ward_id, topic: a.topic, date: a.due_date, score: Number(a.score), source: a.ref });
   }
   for (const u of unplanned) {
     if (u.status === 'Closed' && u.score != null && u.topic) {
       const report = reports.find(r => r.audit_ref === u.ref);
-      out.push({ ward: u.ward, topic: u.topic, date: report ? reportDate(report) : u.raised_on, score: Number(u.score), source: u.ref });
+      out.push({ ward_id: u.ward_id, topic: u.topic, date: report ? reportDate(report) : u.raised_on, score: Number(u.score), source: u.ref });
     }
   }
   return out.filter(r => parseDate(r.date));
@@ -95,16 +95,17 @@ export function latestResults(results: AuditResult[], asOf?: Date) {
   for (const r of results) {
     const d = parseDate(r.date)!;
     if (asOf && d.getTime() > asOf.getTime()) continue;
-    const key = `${r.ward}|${r.topic}`;
+    const key = `${r.ward_id}|${r.topic}`;
     const prev = map.get(key);
     if (!prev || parseDate(prev.date)!.getTime() <= d.getTime()) map.set(key, r);
   }
   return map;
 }
 
-export function heatmap(wards: string[], topics: string[], results: AuditResult[]) {
+/** Rows of the ward × standard heatmap; `wardIds` keeps the caller's order. */
+export function heatmap(wardIds: string[], topics: string[], results: AuditResult[]) {
   const latest = latestResults(results);
-  return wards.map(ward => ({ ward, cells: topics.map(topic => latest.get(`${ward}|${topic}`) ?? null) }));
+  return wardIds.map(ward_id => ({ ward_id, cells: topics.map(topic => latest.get(`${ward_id}|${topic}`) ?? null) }));
 }
 
 /** Mean of the latest result per ward for each topic. */
@@ -131,5 +132,5 @@ export function complianceTrend(results: AuditResult[], year: number, now: Date 
 
 /** Distinct wards with at least one scored audit result in `year`. */
 export function wardsAudited(results: AuditResult[], year: number) {
-  return new Set(results.filter(r => parseDate(r.date)!.getUTCFullYear() === year).map(r => r.ward));
+  return new Set(results.filter(r => parseDate(r.date)!.getUTCFullYear() === year).map(r => r.ward_id));
 }

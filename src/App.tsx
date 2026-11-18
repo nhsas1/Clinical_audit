@@ -3,7 +3,8 @@ import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { Activity, AlertTriangle, BookOpen, CalendarDays, ChevronRight, ClipboardCheck, FileText, FlaskConical, GraduationCap, LayoutDashboard, Menu, Moon, Settings2, ShieldCheck, Sun, Users, X } from 'lucide-react';
 import ToastHost from './components/ToastHost';
 import { ErrorBoundary, PageIntro, useEscape } from './components/ui';
-import { ALL_WARDS, HubProvider, useHub } from './lib/store';
+import { HubProvider, useHub } from './lib/store';
+import { ScopeFilter } from './components/hierarchy';
 import { Actions, Overview, Pending, Planned, Unplanned, useScoped } from './pages/AuditPages';
 import { Certificates, Initiatives, Liaisons, Reports, Standards, Tools, Training, Verify } from './pages/ResourcePages';
 import { plural } from './lib/utils';
@@ -33,6 +34,7 @@ function Shell() {
   useEffect(() => { document.documentElement.dataset.theme = dark ? 'dark' : 'light'; }, [dark]);
   useEffect(() => { document.title = `${title} · Nursing Audit Hub`; }, [title]);
   useEscape(mobile, () => setMobile(false));
+  const headerHospital = hub.scope.hospital ? hub.hospital(hub.scope.hospital)?.name ?? 'All hospitals' : 'All hospitals';
   const badge = (b?: NavItem['badge']) => hub.loading || !b ? null : b === 'pending'
     ? { n: queue.length, label: plural(queue.length, 'pending audit') }
     : { n: open.length, label: plural(open.length, 'open action') };
@@ -47,13 +49,13 @@ function Shell() {
     <main className="main">
       <header className="topbar">
         <button className="icon-btn menu-trigger" onClick={() => setMobile(true)} aria-label="Open navigation" aria-expanded={mobile}><Menu size={20} aria-hidden="true" /></button>
-        <div className="crumb"><span>Clinical Audit Department</span><ChevronRight size={14} aria-hidden="true" /><strong>{title}</strong></div>
+        <div className="crumb"><span className="crumb-hospital">{headerHospital}</span><ChevronRight size={14} aria-hidden="true" /><strong>{title}</strong></div>
         <div className="top-actions">
-          <label className="ward-select"><span>Ward / unit</span><select value={hub.ward} onChange={e => hub.setWard(e.target.value)} aria-label="Filter every page by ward"><option>{ALL_WARDS}</option>{hub.wards.map(w => <option key={w.id}>{w.name}</option>)}</select></label>
           <button className="icon-btn" onClick={() => setDark(!dark)} aria-label={dark ? 'Switch to light theme' : 'Switch to dark theme'}>{dark ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}</button>
           <div className="avatar top-avatar" aria-hidden="true">QA</div>
         </div>
       </header>
+      <div className="filter-bar"><ScopeFilter /></div>
       <nav className="mobile-nav" aria-label="Pages">{allItems.map(item => <NavLink key={item.href} to={item.href}>{item.label}</NavLink>)}</nav>
       <section className="page-wrap">
         <ErrorBoundary key={location.pathname}>

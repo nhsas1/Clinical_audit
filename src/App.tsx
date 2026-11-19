@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { Activity, AlertTriangle, BookOpen, CalendarDays, ChevronRight, ClipboardCheck, FileText, FlaskConical, GraduationCap, LayoutDashboard, LockKeyhole, Menu, Moon, Settings2, ShieldCheck, Sun, Users, X } from 'lucide-react';
 import ToastHost from './components/ToastHost';
 import { ErrorBoundary, PageIntro, useEscape } from './components/ui';
 import { HubProvider, useHub } from './lib/store';
 import { ScopeFilter } from './components/hierarchy';
 import { Actions, Overview, Pending, Planned, Unplanned, useScoped } from './pages/AuditPages';
-import { Certificates, Initiatives, Liaisons, Reports, Standards, Tools, Training, Verify } from './pages/ResourcePages';
+import { Initiatives, Liaisons, Reports, Standards, Tools, Verify } from './pages/ResourcePages';
+import { TrainingLibrary } from './pages/training/TrainingLibrary';
+import { TrainingProvider } from './lib/trainingStore';
 import { plural } from './lib/utils';
 import { AuthProvider, isPublicPath, useAuth } from './lib/auth';
 import { RequireSignIn, SignIn, UserMenu } from './components/account';
@@ -23,7 +25,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     { href: '/tools', label: 'Audit tools', icon: Settings2 }, { href: '/reports', label: 'Reports', icon: FileText }, { href: '/standards', label: 'Standards and policies', icon: BookOpen }] },
   { label: 'People and learning', items: [
     { href: '/initiatives', label: 'Quality initiatives', icon: FlaskConical }, { href: '/training', label: 'Training library', icon: GraduationCap },
-    { href: '/certificates', label: 'Certificates', icon: ShieldCheck }, { href: '/liaisons', label: 'Quality liaisons', icon: Users }] },
+ { href: '/liaisons', label: 'Quality liaisons', icon: Users }] },
 ];
 const allItems = navGroups.flatMap(g => g.items);
 
@@ -71,8 +73,10 @@ function Shell() {
         <ErrorBoundary key={location.pathname}>
           <Routes>
             <Route path="/" element={<Overview />} /><Route path="/overview" element={<Overview />} />
-            {([['/planned', Planned], ['/unplanned', Unplanned], ['/pending', Pending], ['/actions', Actions], ['/tools', Tools], ['/reports', Reports], ['/standards', Standards], ['/initiatives', Initiatives], ['/training', Training], ['/certificates', Certificates], ['/liaisons', Liaisons]] as const)
+            {([['/planned', Planned], ['/unplanned', Unplanned], ['/pending', Pending], ['/actions', Actions], ['/tools', Tools], ['/reports', Reports], ['/standards', Standards], ['/initiatives', Initiatives], ['/liaisons', Liaisons]] as const)
               .map(([href, Page]) => <Route key={href} path={href} element={<RequireSignIn><Page /></RequireSignIn>} />)}
+            <Route path="/training" element={<TrainingLibrary />} />
+            <Route path="/certificates" element={<Navigate to="/training?tab=exams" replace />} />
             <Route path="/verify/:certificateNumber" element={<Verify />} /><Route path="/signin" element={<SignIn />} />
             <Route path="*" element={<><PageIntro title="Page not found" subtitle="This address does not match a page in the hub. Use the navigation to continue." /></>} />
           </Routes>
@@ -87,5 +91,5 @@ function Shell() {
 }
 
 export default function App() {
-  return <AuthProvider><ContentProvider><HubProvider><Shell /></HubProvider></ContentProvider></AuthProvider>;
+  return <AuthProvider><ContentProvider><HubProvider><TrainingProvider><Shell /></TrainingProvider></HubProvider></ContentProvider></AuthProvider>;
 }

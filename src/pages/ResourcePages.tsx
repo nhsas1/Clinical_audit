@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Download, ExternalLink, FileCheck2, Link2, LockKeyhole, Pencil, Save, Search, ShieldCheck, Sparkles, Upload, UsersRound } from 'lucide-react';
-import { jsPDF } from 'jspdf';
 import { supabase } from '../lib/supabase';
 import { useHub } from '../lib/store';
 import { actionStatus, REPORT_STAGES, reportDate, reportStatus } from '../lib/derive';
@@ -10,6 +9,8 @@ import { fmtDate, plural, showToast } from '../lib/utils';
 import { Drawer, Empty, Modal, PageIntro, Score, Section, Status, Table } from '../components/ui';
 import { T } from '../lib/content';
 import { useScoped } from './AuditPages';
+import { useTraining } from '../lib/trainingStore';
+import { certificatePdf, downloadBlob } from '../lib/training';
 import { WardCell } from '../components/hierarchy';
 import { Can } from '../components/account';
 
@@ -79,25 +80,28 @@ export function Initiatives() {
   </>;
 }
 
-export function Training() {
+/** Learning resources tab of the Training library. */
+export function ResourcesTab() {
   const [cat, setCat] = useState('All');
   const cats = ['All', 'Hand hygiene', 'Medication safety', 'Patient safety', 'Pressure injury', 'Falls', 'Vascular access', 'Documentation', 'Communication'];
   const rows = learning.filter(x => cat === 'All' || x[2] === cat);
-  return <><PageIntro title="Training library" subtitle="Short, practical learning resources for quality and audit readiness." />
+  return <>
     <div className="filters category-filters" role="group" aria-label="Filter by category">{cats.map(x => <button className={cat === x ? 'chip active' : 'chip'} aria-pressed={cat === x} onClick={() => setCat(x)} key={x}>{x}</button>)}</div>
     <Section title="Learning resources" meta={plural(rows.length, 'resource')}><Table empty={!rows.length}><thead><tr><th><T>Title</T></th><th><T>Format</T></th><th><T>Category</T></th><th><T>Level</T></th><th><T>Minutes</T></th><th><span className="sr-only">Open</span></th></tr></thead><tbody>{rows.map(x => <tr key={x[0]}><td><strong>{x[0]}</strong></td><td>{x[1]}</td><td>{x[2]}</td><td>{x[3]}</td><td>{x[4]}</td><td><button className="btn small" onClick={simulated} aria-label={`Open ${x[0]}`}><ExternalLink size={13} aria-hidden="true" /> <T>Open</T></button></td></tr>)}</tbody></Table></Section></>;
 }
 
 function PassFail({ score }: { score: number }) { return <Status value={score >= PASS_MARK ? 'Pass' : 'Fail'} />; }
 
-export function Certificates() {
+/** Exams tab of the Training library (was the Certificates page). */
+export function ExamsTab() {
+  const tr = useTraining();
   const hub = useHub();
   const [course, setCourse] = useState('Hand Hygiene: Five Moments');
   const [name, setName] = useState('');
   const [answers, setAnswers] = useState<number[]>(Array(5).fill(-1));
   const [result, setResult] = useState<{ score: number; passed: boolean; number?: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const register = hub.certificates.filter(c => hub.inScope(c.ward_id));
+  const register = tr.exams.filter(c => hub.inScope(c.ward_id)).sort((a, b) => b.date.localeCompare(a.date));
   const hand = course.startsWith('Hand');
   const questions = hand ? ['When should hand hygiene be performed before a clean procedure?', 'Which action is required after touching a patient?', 'Gloves replace hand hygiene.', 'The correct product depends on local policy and the task.', 'Hand hygiene is part of preventing transmission.'] : ['What is checked before administration?', 'A discrepancy should be escalated before administration.', 'Which is a safe documentation practice?', 'A second check is required where local policy specifies it.', 'If unsure, seek advice before proceeding.'];
   const options = hand ? [['After touching surroundings', 'Immediately before the procedure', 'Only at the end of the shift'], ['Hand hygiene', 'Record the contact', 'No action'], ['True', 'False'], ['True', 'False'], ['True', 'False']] : [['The patient identity and prescription', 'Only the room number', 'Nothing if familiar'], ['True', 'False'], ['Document immediately according to policy', 'Document at month end', 'Skip documentation'], ['True', 'False'], ['True', 'False']];
@@ -114,18 +118,11 @@ export function Certificates() {
       showToast('The exam could not be scored right now. Please try again later.');
     } finally { setSubmitting(false); }
   }
-  function download() {
-    if (!result?.passed) return;
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    pdf.setDrawColor(31, 78, 121); pdf.setLineWidth(1.2); pdf.rect(12, 12, 273, 186); pdf.setLineWidth(.35); pdf.rect(16, 16, 265, 178);
-    pdf.setFont('times', 'bold'); pdf.setFontSize(28); pdf.text('Certificate of Completion', 148, 48, { align: 'center' });
-    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(12); pdf.text('Nursing Audit Hub · Clinical Audit Department', 148, 62, { align: 'center' });
-    pdf.setFontSize(21); pdf.text(name || 'Trainee Nurse', 148, 91, { align: 'center' });
-    pdf.setFontSize(13); pdf.text(`has completed ${course}`, 148, 106, { align: 'center' }); pdf.text(`Score: ${result.score}%    Certificate: ${result.number}`, 148, 121, { align: 'center' });
-    pdf.setFontSize(10); pdf.line(72, 160, 125, 160); pdf.line(165, 160, 218, 160); pdf.text('Head of Clinical Audit', 98, 168, { align: 'center' }); pdf.text('Director of Nursing', 191, 168, { align: 'center' });
-    pdf.save(`${result.number}.pdf`);
+  async function download() {
+    if (!result?.passed || !result.number) return;
+    downloadBlob(await certificatePdf({ number: result.number, name: name.trim(), title: course, date: fmtDate(new Date().toISOString()), detail: `exam score ${result.score}%`, verifyUrl: `${window.location.origin}/verify/${result.number}` }), `${result.number}.pdf`);
   }
-  return <><PageIntro title="Certificates" subtitle="Complete a short course exam and issue a verifiable learning certificate." />
+  return <>
     <div className="exam-layout"><Section title="Course exam" meta={`Pass mark ${PASS_MARK}%`}>
       <label className="field-label">Course<select value={course} onChange={e => { setCourse(e.target.value); setResult(null); setAnswers(Array(5).fill(-1)); }}><option>Hand Hygiene: Five Moments</option><option>Medication Safety: Administration Checks</option></select></label>
       <label className="field-label">Trainee name<input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Trainee Nurse A" /></label>
@@ -134,7 +131,7 @@ export function Certificates() {
     </Section>
       <div>{result ? <div className={result.passed ? 'result-card passed' : 'result-card failed'} role="status"><ShieldCheck size={26} aria-hidden="true" /><div className="eyebrow">EXAM RESULT</div><h2>{result.passed ? 'Pass' : 'Fail'}</h2><strong className="result-score">{result.score}%</strong><p>{result.passed ? `Certificate ${result.number} has been issued.` : `Below the ${PASS_MARK}% pass mark. Review the learning resources and try again.`}</p>{result.passed && <button className="btn primary" onClick={download}><Download size={15} aria-hidden="true" /> Download PDF</button>}</div>
         : <div className="certificate-note"><ShieldCheck size={25} aria-hidden="true" /><strong>Automatic certificate</strong><p>Answers are scored by the Supabase database function. Correct answers are never sent to the browser.</p></div>}</div></div>
-    <Section title="Certificate register" meta="Fictional register preview"><Table empty={!register.length}><thead><tr><th><T>Trainee</T></th><th><T>Ward</T></th><th><T>Course</T></th><th><T>Score</T></th><th><T>Result</T></th><th><T>Certificate number</T></th></tr></thead><tbody>{register.map(c => <tr key={c.trainee + c.course}><td>{c.trainee}</td><td><WardCell id={c.ward_id} /></td><td>{c.course}</td><td className="score">{c.score}%</td><td><PassFail score={c.score} /></td><td>{c.number ?? '— (retake required)'}</td></tr>)}</tbody></Table></Section></>;
+    <Section title="Exam results" meta="Fictional results · passing certificates also appear in the certificate register (Attendance tab)"><Table empty={!register.length}><thead><tr><th><T>Trainee</T></th><th><T>Ward</T></th><th><T>Course</T></th><th><T>Score</T></th><th><T>Result</T></th><th><T>Certificate number</T></th></tr></thead><tbody>{register.map(c => <tr key={c.trainee + c.course}><td>{c.trainee}</td><td><WardCell id={c.ward_id} /></td><td>{c.course}</td><td className="score">{c.score}%</td><td><PassFail score={c.score} /></td><td>{c.number ?? '— (retake required)'}</td></tr>)}</tbody></Table></Section></>;
 }
 
 const TRAINING_STATUSES: Liaison['training_status'][] = ['Trained', 'Refresher due', 'Not yet trained'];
@@ -191,10 +188,32 @@ export function Liaisons() {
 }
 
 export function Verify() {
-  const { certificateNumber } = useParams();
-  const [record, setRecord] = useState<{ trainee_name: string; course_name: string; issued_on: string } | null>(null);
+  const { certificateNumber = '' } = useParams();
+  const tr = useTraining();
+  const [record, setRecord] = useState<{ name: string; title: string; issued_on: string } | null>(null);
   const [checked, setChecked] = useState(false);
-  useEffect(() => { (async () => { try { if (supabase && certificateNumber) { const { data } = await supabase.from('public_certificate_verification').select('trainee_name,course_name,issued_on').eq('number', certificateNumber).maybeSingle(); if (data) setRecord(data); } } finally { setChecked(true); } })(); }, [certificateNumber]);
-  return <><PageIntro eyebrow="PUBLIC VERIFICATION" title="Certificate verification" subtitle="Limited public view: only the certificate identity and issue date are shown." />
-    <div className="verify-card"><ShieldCheck size={30} aria-hidden="true" /><div className="eyebrow">CERTIFICATE NUMBER</div><h2>{certificateNumber}</h2>{checked && record ? <div className="verify-grid"><span>Trainee</span><strong>{record.trainee_name}</strong><span>Course</span><strong>{record.course_name}</strong><span>Issue date</span><strong>{fmtDate(record.issued_on)}</strong></div> : checked ? <div className="notice warning">No certificate was found for this number.</div> : <p className="muted">Checking the certificate register…</p>}<p className="muted">This is a fictional simulation record.</p></div></>;
+  const valid = /^NA-CERT-\d{4}-\d{4,}$/.test(certificateNumber);
+  useEffect(() => {
+    let live = true;
+    setChecked(false); setRecord(null);
+    (async () => {
+      try {
+        if (!valid) return;
+        if (tr.mode === 'sample') { const c = tr.certificates.find(x => x.number === certificateNumber); if (c && live) setRecord({ name: c.trainee, title: c.title, issued_on: c.issued_on }); return; }
+        if (supabase) {
+          const { data } = await supabase.from('public_certificate_verification').select('trainee_name,title,issued_on').eq('number', certificateNumber).maybeSingle();
+          if (data && live) setRecord({ name: data.trainee_name, title: data.title, issued_on: data.issued_on });
+        }
+      } finally { if (live) setChecked(true); }
+    })();
+    return () => { live = false; };
+  }, [certificateNumber, tr.mode, tr.certificates, valid]);
+  return <><PageIntro eyebrow="PUBLIC VERIFICATION" title="Certificate verification" subtitle="Limited public view: only the name, the session or course, and the date are shown." />
+    <div className="verify-card"><ShieldCheck size={30} aria-hidden="true" /><div className="eyebrow">CERTIFICATE NUMBER</div><h2>{certificateNumber}</h2>
+      {!valid ? <div className="notice warning" role="alert">This is not a valid certificate number. Numbers look like NA-CERT-2026-0001.</div>
+        : !checked || tr.loading ? <p className="muted" role="status">Checking the certificate register…</p>
+        : record ? <div className="verify-grid" role="status"><span>Name</span><strong>{record.name}</strong><span>Session or course</span><strong>{record.title}</strong><span>Date</span><strong>{fmtDate(record.issued_on)}</strong></div>
+        : <div className="notice warning" role="alert">No certificate was found for this number.</div>}
+      <p className="muted">This is a fictional simulation record.</p></div></>;
 }
+

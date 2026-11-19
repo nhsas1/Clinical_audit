@@ -427,14 +427,14 @@ insert into public.references_library(code,title,kind,url) values
 on conflict (code) do nothing;
 
 insert into public.planned_audits(ref,topic_id,ward_id,quarter,due_date,auditor,status,score)
-select x.ref,t.id,w.id,x.quarter,x.due_date,x.auditor,x.status,x.score from (values
+select x.ref,t.id,w.id,x.quarter,x.due_date::date,x.auditor,x.status,x.score from (values
  ('PA-001','Hand Hygiene','ICU','Q1','2026-03-15','Auditor 1','Completed',94),('PA-002','Medication Safety','Medical A','Q1','2026-03-28','Auditor 2','Completed',88),('PA-003','Patient ID','Surgical A','Q1','2026-03-30','Auditor 1','Completed',92),('PA-004','Pressure Injury','Medical B','Q2','2026-05-14','Auditor 3','Completed',79),('PA-005','Falls Prevention','ED','Q2','2026-06-12','Auditor 2','Completed',83),('PA-006','IV Cannula','Oncology','Q2','2026-06-28','Auditor 1','Completed',91),('PA-007','Documentation','Paediatrics','Q3','2026-08-20','Auditor 3','Completed',82),('PA-008','Hand Hygiene','Maternity','Q3','2026-09-15','Auditor 2','Overdue',null),('PA-009','Medication Safety','Medical B','Q3','2026-09-22','Auditor 1','Overdue',null),('PA-010','Patient ID','Orthopaedics','Q3','2026-10-10','Auditor 3','In progress',null),('PA-011','Pressure Injury','Surgical B','Q4','2026-11-12','Auditor 2','Scheduled',null),('PA-012','Falls Prevention','Medical A','Q4','2026-11-18','Auditor 1','Scheduled',null),('PA-013','IV Cannula','ICU','Q4','2026-12-03','Auditor 3','Scheduled',null),('PA-014','Documentation','Oncology','Q4','2026-12-15','Auditor 2','Scheduled',null)
 ) x(ref,topic,ward,quarter,due_date,auditor,status,score)
 join public.standards_topics t on t.name=x.topic join public.wards w on w.name=x.ward
 on conflict (ref) do nothing;
 
 insert into public.unplanned_audits(ref,trigger_type,subject,ward_id,raised_on,priority,status,description)
-select x.ref,x.trigger,x.subject,w.id,x.raised_on,x.priority,x.status,x.description from (values
+select x.ref,x.trigger,x.subject,w.id,x.raised_on::date,x.priority,x.status,x.description from (values
  ('UA-001','Incident report','Medication omission review','Medical B','2026-10-05','High','In progress','Review contributing factors and escalation.'),
  ('UA-002','Patient complaint','Communication at handover','Surgical A','2026-09-18','Medium','Open','Simulation complaint record.'),
  ('UA-003','Infection alert','Cannula care observations','ED','2026-10-22','High','Open','Check bundle adherence.'),
@@ -449,13 +449,13 @@ select x.audit_ref,w.id,x.waiting_for,current_date-x.days,x.owner from (values
 join public.wards w on w.name=x.ward where not exists (select 1 from public.pending_audits p where p.audit_ref=x.audit_ref and p.ward_id=w.id);
 
 insert into public.action_plans(ref,topic_id,ward_id,finding,owner,due_date,progress,status)
-select x.ref,t.id,w.id,x.finding,x.owner,x.due_date,x.progress,x.status from (values
+select x.ref,t.id,w.id,x.finding,x.owner,x.due_date::date,x.progress,x.status from (values
  ('AP-001','Hand Hygiene','ICU','Missed hand hygiene opportunity at bay entrance.','Owner 1','2026-11-20',72,'Open'),('AP-002','Medication Safety','Medical A','Second-check documentation incomplete.','Owner 2','2026-10-15',45,'Overdue'),('AP-003','Patient ID','Surgical A','Two identifiers not consistently verbalised.','Owner 3','2026-12-01',60,'Open'),('AP-004','Pressure Injury','Medical B','Risk reassessment not visible in notes.','Owner 4','2026-09-30',30,'Overdue'),('AP-005','Falls Prevention','ED','Rounding prompt needs standardisation.','Owner 5','2026-12-15',80,'Open'),('AP-006','IV Cannula','Oncology','Daily site review field inconsistently completed.','Owner 1','2026-08-30',100,'Closed'),('AP-007','Documentation','Paediatrics','Handover narrative lacks escalation plan.','Owner 2','2026-09-01',100,'Closed'),('AP-008','Medication Safety','Maternity','Storage check record needs clearer ownership.','Owner 3','2026-12-20',20,'Open')
 ) x(ref,topic,ward,finding,owner,due_date,progress,status)
 join public.standards_topics t on t.name=x.topic join public.wards w on w.name=x.ward on conflict (ref) do nothing;
 
 insert into public.qi_projects(ref,title,ward_id,category,pdsa_stage,progress,lead,start_date,target_date,measure_text)
-select x.ref,x.title,w.id,x.category,x.stage,x.progress,x.lead,x.start_date,x.target_date,x.measure from (values
+select x.ref,x.title,w.id,x.category,x.stage,x.progress,x.lead,x.start_date::date,x.target_date::date,x.measure from (values
  ('QI-001','Improve bedside handover reliability','ICU','Communication','Study',68,'Lead 1','2026-02-01','2026-11-30','Baseline 71% → current 89% complete handover'),('QI-002','Reduce missed medication checks','Medical A','Medication safety','Do',44,'Lead 2','2026-04-15','2026-12-15','Baseline 78% → current 84% second checks'),('QI-003','Pressure injury prevention bundle','Medical B','Pressure injury','Plan',25,'Lead 3','2026-06-01','2027-01-15','Baseline 63% → current 70% bundle use'),('QI-004','Falls rounding reliability','Orthopaedics','Falls','Act',90,'Lead 4','2026-01-10','2026-10-31','Baseline 74% → current 92% rounds'),('QI-005','Documentation improvement','Oncology','Documentation','Do',52,'Lead 5','2026-03-01','2026-12-20','Baseline 69% → current 81% completeness')
 ) x(ref,title,ward,category,stage,progress,lead,start_date,target_date,measure)
 join public.wards w on w.name=x.ward on conflict (ref) do nothing;

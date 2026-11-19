@@ -1,0 +1,178 @@
+{
+  "_note": "Hospital > Department > Ward structure. Source of truth for scripts/generate-seed.mjs. Edit here, then run `pnpm seed:generate`. Departments are listed only where a hospital has them. `code` is an internal key; `short` is the label used where space is tight.",
+  "hospitals": [
+    {
+      "code": "SMC",
+      "short": "SMC",
+      "name": "SMC",
+      "departments": [
+        {
+          "name": "Medical Department",
+          "wards": [
+            "AKU",
+            "Ward 204",
+            "PDU",
+            "Ward 207",
+            "Ward 208",
+            "Ward 312",
+            "Ward 411",
+            "Ward 412",
+            "Ward 413",
+            "Ward 36",
+            "Ward 51",
+            "Ward 52",
+            "Ward 53",
+            "Ward 54",
+            "Ward 55",
+            "Ward 56",
+            "Ward 65",
+            "Ward 66",
+            "Helipad 101",
+            "Helipad 102",
+            "Helipad 103",
+            "Helipad 104",
+            "Medical Clinic",
+            "Pediatric DCU",
+            "Pediatric Clinic",
+            "Biological Clinic",
+            "HBDC",
+            "Ward 4",
+            "H1",
+            "H2",
+            "H3",
+            "H4",
+            "Ward 31",
+            "Ward 32",
+            "Ward 34",
+            "Ward 33",
+            "MOPD",
+            "Hematology Clinic",
+            "PICU",
+            "NICU 35",
+            "M3",
+            "NICU 307",
+            "NICU 309"
+          ]
+        },
+        {
+          "name": "Surgical Department",
+          "wards": [
+            "Ward SHDU",
+            "Ward 21",
+            "Ward 22",
+            "Ward 23",
+            "Ward 33",
+            "Ward 35",
+            "Ward 41",
+            "Ward 42",
+            "Ward 43",
+            "Ward 45",
+            "Ward 44",
+            "Ward 46",
+            "Ward 64",
+            "Main OT",
+            "Obs and Gyne AE",
+            "Ward 310",
+            "Ward 311",
+            "Ward 407",
+            "Ward 408",
+            "Ward 409",
+            "Ward 410",
+            "JMH (OPD / NICU)",
+            "PICU",
+            "307 (NICU)",
+            "309 (NICU)",
+            "ENT Clinic",
+            "Ophthalmology Clinic",
+            "Obs and Gyne Clinic",
+            "Dental Clinic",
+            "Surgical Clinic",
+            "Angio Room",
+            "Plaster Room",
+            "Diabetics Foot Clinic",
+            "Labor Room 308",
+            "DCU",
+            "Endoscopy",
+            "Ward 202",
+            "Ward 206",
+            "JMH-M4",
+            "JMH-OT"
+          ]
+        },
+        {
+          "name": "Excellence Department",
+          "wards": [
+            "Sehati",
+            "ICU",
+            "AE",
+            "Ward 61",
+            "Ward 62",
+            "Ward 63",
+            "Ward 12"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "MSHCC",
+      "short": "MSHCC",
+      "name": "Muharraq Special Health Care Center",
+      "wards": [
+        "MSHCC 12",
+        "MSHCC 21",
+        "MSHCC 22",
+        "MSHCC 31",
+        "MSHCC Ward 11"
+      ]
+    },
+    {
+      "code": "PSYCH",
+      "short": "Psychiatric",
+      "name": "Psychiatric Hospital",
+      "wards": [
+        "Ghazali 1",
+        "Ghazali 11",
+        "Ghazali 12",
+        "Ghazali 13",
+        "Ghazali 21",
+        "Ghazali 22",
+        "Ghazali 23",
+        "Ghazali 31",
+        "Ghazali 32",
+        "Ghazali 33",
+        "Ghazali 42",
+        "Almoayed 1",
+        "Almoayed 2",
+        "Child and Adolescent",
+        "MGH-G5",
+        "MGH-G4",
+        "MGH 7",
+        "OPD",
+        "Community"
+      ]
+    },
+    {
+      "code": "EKK",
+      "short": "EKK",
+      "name": "Ebrahim Khalil Kanoo Center",
+      "wards": [
+        "Ward 1",
+        "Ward 2",
+        "Ward 3",
+        "Ward 4",
+        "Sport Clinic and Cardiac Rehabilitation"
+      ]
+    },
+    {
+      "code": "ARK",
+      "short": "ARK",
+      "name": "Abdulrahman Kanoo Dialysis Centre",
+      "wards": [
+        "ARK 1",
+        "ARK 2",
+        "ARK 3",
+        "PDU"
+      ]
+    }
+  ]
+}

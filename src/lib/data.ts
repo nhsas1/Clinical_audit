@@ -1,16 +1,78 @@
-export type Ward = { id:string; name:string };
-export type Topic = { id:string; name:string };
-export type PlannedAudit = { ref:string; topic_id:string; ward_id:string; quarter:string; due_date:string; auditor:string; status:string; score:number|null; standards_topics?:{name:string}; wards?:{name:string} };
-export type UnplannedAudit = { ref:string; trigger_type:string; subject:string; ward_id:string; raised_on:string; priority:string; status:string; description:string; wards?:{name:string} };
-export type PendingAudit = { id:string; audit_ref:string; ward_id:string; waiting_for:string; since_date:string; owner:string; wards?:{name:string} };
-export type ActionPlan = { ref:string; topic_id:string; ward_id:string; finding:string; owner:string; due_date:string; progress:number; status:string; standards_topics?:{name:string}; wards?:{name:string} };
+import seed from './seed.generated.json';
 
-export const wardNames = ['ICU','Medical A','Medical B','Surgical A','Surgical B','Paediatrics','Maternity','ED','Orthopaedics','Oncology'];
-export const topicNames = ['Hand Hygiene','Medication Safety','Patient ID','Pressure Injury','Falls Prevention','IV Cannula','Documentation'];
-const id = (s:string) => s.toLowerCase().replace(/[^a-z0-9]+/g,'-');
-export const fallbackWards:Ward[] = wardNames.map(name=>({id:id(name),name}));
-export const fallbackTopics:Topic[] = topicNames.map(name=>({id:id(name),name}));
-export const fallbackPlanned:PlannedAudit[] = [
- ['PA-001','Hand Hygiene','ICU','Q1','2026-03-15','Auditor 1','Completed',94],['PA-002','Medication Safety','Medical A','Q1','2026-03-28','Auditor 2','Completed',88],['PA-003','Patient ID','Surgical A','Q1','2026-03-30','Auditor 1','Completed',92],['PA-004','Pressure Injury','Medical B','Q2','2026-05-14','Auditor 3','Completed',79],['PA-005','Falls Prevention','ED','Q2','2026-06-12','Auditor 2','Completed',83],['PA-006','IV Cannula','Oncology','Q2','2026-06-28','Auditor 1','Completed',91],['PA-007','Documentation','Paediatrics','Q3','2026-08-20','Auditor 3','Completed',82],['PA-008','Hand Hygiene','Maternity','Q3','2026-09-15','Auditor 2','Overdue',null],['PA-009','Medication Safety','Medical B','Q3','2026-09-22','Auditor 1','Overdue',null],['PA-010','Patient ID','Orthopaedics','Q3','2026-10-10','Auditor 3','In progress',null],['PA-011','Pressure Injury','Surgical B','Q4','2026-11-12','Auditor 2','Scheduled',null],['PA-012','Falls Prevention','Medical A','Q4','2026-11-18','Auditor 1','Scheduled',null],['PA-013','IV Cannula','ICU','Q4','2026-12-03','Auditor 3','Scheduled',null],['PA-014','Documentation','Oncology','Q4','2026-12-15','Auditor 2','Scheduled',null]
-].map(([ref,topic,ward,quarter,due_date,auditor,status,score])=>({ref:String(ref),topic_id:id(String(topic)),ward_id:id(String(ward)),quarter:String(quarter),due_date:String(due_date),auditor:String(auditor),status:String(status),score:score as number|null,standards_topics:{name:String(topic)},wards:{name:String(ward)}}));
-export const fallbackPending:PendingAudit[] = [['PA-008','Maternity','Awaiting data collection',5,'Owner 1'],['PA-009','Medical B','Awaiting report',12,'Owner 2'],['UA-001','Medical B','Action plan overdue',21,'Owner 3'],['PA-010','Orthopaedics','Awaiting sign-off',31,'Owner 4'],['UA-002','Surgical A','Re-audit date not set',41,'Owner 5'],['PA-004','Medical B','Awaiting report',18,'Owner 2']].map(([audit_ref,ward,waiting_for,days,owner],i)=>({id:String(i),audit_ref:String(audit_ref),ward_id:id(String(ward)),waiting_for:String(waiting_for),since_date:`2026-10-${String(31-Number(days)).padStart(2,'0')}`,owner:String(owner),wards:{name:String(ward)}}));
+// Types and the embedded fictional sample data, used when Supabase is not
+// configured or not yet migrated. Statuses that depend on time (overdue, days
+// waiting, report status) are NOT stored; they are derived in ./derive.ts.
+
+export type Hospital = { id: string; code: string; short: string; name: string };
+export type Department = { id: string; hospital_id: string; name: string };
+export type Ward = { id: string; name: string; hospital_id: string; department_id: string | null };
+export type Topic = { id: string; name: string };
+
+export type PlannedStatus = 'Completed' | 'In progress' | 'Scheduled' | 'Overdue';
+export type PlannedAudit = {
+  ref: string; topic: string; ward_id: string; quarter: string; due_date: string;
+  auditor: string; status: PlannedStatus; score: number | null;
+};
+export type UnplannedAudit = {
+  ref: string; trigger_type: string; subject: string; ward_id: string; raised_on: string;
+  priority: 'Low' | 'Medium' | 'High'; status: 'Open' | 'In progress' | 'Closed';
+  description: string; topic?: string | null; score?: number | null;
+};
+export type PendingAudit = { id: string; audit_ref: string; ward_id: string; waiting_for: string; since_date: string; owner: string };
+export type ActionPlan = {
+  ref: string; topic: string; ward_id: string; finding: string; owner: string;
+  due_date: string; progress: number; status: 'Open' | 'Overdue' | 'Closed'; audit_ref?: string | null;
+};
+export type ReportStage = 'Drafted' | 'Peer reviewed' | 'Approved' | 'Published' | 'Action plan agreed';
+export type Report = {
+  serial: string; title: string; ward_id: string; audit_ref: string;
+  history: { stage: ReportStage; date: string }[];
+  references: string[];
+};
+export type ReferenceKind = 'External standard' | 'Internal policy' | 'Audit method';
+export type Reference = { code: string; title: string; kind: ReferenceKind; url: string };
+export type Initiative = {
+  ref: string; title: string; ward_id: string; category: string; stage: 'Plan' | 'Do' | 'Study' | 'Act';
+  progress: number; lead: string; measure: string;
+};
+export type Liaison = {
+  ward_id: string; name: string; role: string; ext: string;
+  training_status: 'Trained' | 'Refresher due' | 'Not yet trained'; last_meeting: string;
+};
+export type CertificateRecord = { trainee: string; ward_id: string; course: string; score: number; number: string | null };
+
+export const PASS_MARK = 80;
+
+
+// All fictional sample data is generated by scripts/generate-seed.mjs from
+// hierarchy.json (pnpm seed:generate); the same generator writes the
+// Supabase seed migration, so embedded and database data are identical.
+export const SAMPLE_REFERENCE_DATE = seed.reference_date;
+export const topicNames = ['Hand Hygiene', 'Medication Safety', 'Patient ID', 'Pressure Injury', 'Falls Prevention', 'IV Cannula', 'Documentation'];
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+export const fallbackTopics: Topic[] = topicNames.map(name => ({ id: slug(name), name }));
+export const fallbackHospitals: Hospital[] = seed.hospitals.map(({ id, code, short, name }) => ({ id, code, short, name }));
+export const fallbackDepartments: Department[] = seed.departments.map(({ id, hospital_id, name }) => ({ id, hospital_id, name }));
+export const fallbackWards: Ward[] = seed.wards.map(({ id, name, hospital_id, department_id }) => ({ id, name, hospital_id, department_id }));
+export const fallbackPlanned = seed.planned as PlannedAudit[];
+export const fallbackUnplanned = seed.unplanned as UnplannedAudit[];
+export const fallbackPending = seed.pending as PendingAudit[];
+export const fallbackActions = seed.actions as ActionPlan[];
+export const fallbackReports = seed.reports as Report[];
+export const fallbackInitiatives = seed.initiatives as Initiative[];
+export const fallbackLiaisons = seed.liaisons as Liaison[];
+export const fallbackCertificates = seed.examAttempts as CertificateRecord[];
+
+export const fallbackReferences: Reference[] = [
+  { code: 'WHO-HH-2009', title: 'WHO Guidelines on Hand Hygiene in Health Care (2009)', kind: 'External standard', url: 'https://www.who.int/publications/i/item/9789241597906' },
+  { code: 'HQIP-BPCA', title: 'HQIP Best Practice in Clinical Audit', kind: 'Audit method', url: 'https://www.hqip.org.uk/guidance/best-practice-in-clinical-audit/' },
+  { code: 'NPIAP-EPUAP', title: 'International Guideline on Prevention and Treatment of Pressure Ulcers/Injuries', kind: 'External standard', url: '' },
+  { code: 'POL-HH', title: 'Hand hygiene policy — internal code to be added', kind: 'Internal policy', url: '' },
+  { code: 'POL-MED', title: 'Medication management policy — internal code to be added', kind: 'Internal policy', url: '' },
+  { code: 'POL-ID', title: 'Patient identification policy — internal code to be added', kind: 'Internal policy', url: '' },
+  { code: 'POL-PI', title: 'Pressure injury prevention policy — internal code to be added', kind: 'Internal policy', url: '' },
+  { code: 'POL-FALLS', title: 'Falls prevention policy — internal code to be added', kind: 'Internal policy', url: '' },
+  { code: 'POL-IV', title: 'Peripheral IV cannula policy — internal code to be added', kind: 'Internal policy', url: '' },
+  { code: 'POL-DOC', title: 'Nursing documentation policy — internal code to be added', kind: 'Internal policy', url: '' },
+];

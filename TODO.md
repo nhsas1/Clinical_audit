@@ -1,5 +1,7 @@
 # Nursing Audit Hub delivery outcomes
 
+> Superseded by the README and the pull request for branch `fix/review-bugs-and-structure`, which cover the review fixes, the hospital hierarchy, sign-in and roles, edit mode and the Training Library.
+
 - [x] Design system and shell: light/dark themes, responsive sidebar/mobile navigation, global ward filter, accessible labels/focus states, formal navy/teal palette, serif headings, simulation footer note.
 - [x] Supabase integration: use configured URL and anon key; read seeded data; document migrations, seed data, storage buckets and role model; preserve RLS and never expose service-role credentials.
 - [x] Overview: filter-responsive KPI tiles, 2026 trend chart with 90% target, compliance by standard, 10×7 ward heatmap with legend/detail interaction, attention/upcoming lists and six-stage audit cycle.

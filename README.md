@@ -41,7 +41,7 @@ The anon/publishable key is public by design; row level security is the protecti
 | Resources | `audit_tools`, `references_library`, `training_resources`, `qi_projects`, `liaisons` |
 | Training | `training_sessions`, `training_attendance`, `training_activity`, `courses`, `exam_questions`, `exam_attempts`, `certificates` (one register for sessions and exams) |
 | Accounts and text | `user_roles`, `site_content`, `site_content_history` |
-| Public functions | `public_dashboard()`, `public_training_dashboard()`, view `public_certificate_verification` (name, session or course, date) |
+| Public functions | `public_dashboard()`, `public_training_dashboard()`, `verify_certificate(number)` (name, session or course, date for one number; no listing) |
 
 Time-dependent statuses (overdue, days waiting, report status) are **derived**, never stored: see `src/lib/derive.ts` and the matching SQL functions. Compliance figures come only from audit results.
 
@@ -64,6 +64,8 @@ where user_id = (select id from auth.users where email = 'someone@example.org');
 ```
 
 The interface hides actions a role cannot take, but row level security in the database is what enforces it.
+
+**When adding a database function:** Supabase grants `EXECUTE` on new functions in `public` to `anon` and `authenticated` by default. Revoke it explicitly (`revoke execute on function … from public, anon;`) unless signed-out visitors should call it.
 
 ## Edit page mode
 
@@ -102,6 +104,7 @@ Migrations, in order:
 | `006_site_content.sql` | Editable page text and its history |
 | `007_training.sql` | Training tables, certificate register, storage policies, `public_training_dashboard()` |
 | `008_seed_training.sql` *(generated)* | **Replaces the sample training data** |
+| `009_security_hardening.sql` | Closes gaps found on a real Supabase project: Supabase grants new functions to `anon` by default, so exam scoring and certificate numbers are restricted explicitly; verification by number only; `search_path` and index fixes |
 
 **Apply them to a Supabase branch or a dev project first, never straight to production.** For example, with the Supabase CLI linked to a branch run `supabase db push`, or paste each file into the SQL editor of the dev project in order. All files are safe to run again. 004 and 008 delete and re-insert *sample* rows only.
 

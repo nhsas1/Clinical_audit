@@ -201,8 +201,10 @@ export function Verify() {
         if (!valid) return;
         if (tr.mode === 'sample') { const c = tr.certificates.find(x => x.number === certificateNumber); if (c && live) setRecord({ name: c.trainee, title: c.title, issued_on: c.issued_on }); return; }
         if (supabase) {
-          const { data } = await supabase.from('public_certificate_verification').select('trainee_name,title,issued_on').eq('number', certificateNumber).maybeSingle();
-          if (data && live) setRecord({ name: data.trainee_name, title: data.title, issued_on: data.issued_on });
+          // One number at a time: the database never lists certificates to the public.
+          const { data } = await supabase.rpc('verify_certificate', { p_number: certificateNumber });
+          const row = Array.isArray(data) ? data[0] : null;
+          if (row && live) setRecord({ name: row.trainee_name, title: row.title, issued_on: row.issued_on });
         }
       } finally { if (live) setChecked(true); }
     })();

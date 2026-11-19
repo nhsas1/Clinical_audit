@@ -22,6 +22,7 @@ describe('roles', () => {
 describe('signed-out access', () => {
   it('only dashboards, sign-in and certificate checks are public', () => {
     for (const p of ['/', '/overview', '/signin', '/verify/NA-CERT-2026-0001']) expect(isPublicPath(p)).toBe(true);
-    for (const p of ['/planned', '/pending', '/reports', '/liaisons', '/certificates', '/training']) expect(isPublicPath(p)).toBe(false);
+    for (const p of ['/planned', '/pending', '/reports', '/liaisons', '/certificates']) expect(isPublicPath(p)).toBe(false);
+    expect(isPublicPath('/training')).toBe(true); // its non-dashboard tabs check sign-in themselves
   });
 });

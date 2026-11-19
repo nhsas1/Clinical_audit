@@ -62,7 +62,7 @@ export const fallbackActions = seed.actions as ActionPlan[];
 export const fallbackReports = seed.reports as Report[];
 export const fallbackInitiatives = seed.initiatives as Initiative[];
 export const fallbackLiaisons = seed.liaisons as Liaison[];
-export const fallbackCertificates = seed.certificates as CertificateRecord[];
+export const fallbackCertificates = seed.examAttempts as CertificateRecord[];
 
 export const fallbackReferences: Reference[] = [
   { code: 'WHO-HH-2009', title: 'WHO Guidelines on Hand Hygiene in Health Care (2009)', kind: 'External standard', url: 'https://www.who.int/publications/i/item/9789241597906' },

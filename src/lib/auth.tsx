@@ -26,8 +26,8 @@ export function roleCan(role: Role | null, p: Permission) {
   return role != null && PERMISSIONS[p].includes(role);
 }
 
-/** Routes a signed-out visitor may open: the dashboards and certificate checks. */
-export const PUBLIC_PATHS = ['/', '/overview', '/signin'];
+/** Routes a signed-out visitor may open: the dashboards (Overview, Training dashboard tab) and certificate checks. */
+export const PUBLIC_PATHS = ['/', '/overview', '/training', '/signin'];
 export const isPublicPath = (path: string) => PUBLIC_PATHS.includes(path) || path.startsWith('/verify/');
 
 type AuthCtx = {
